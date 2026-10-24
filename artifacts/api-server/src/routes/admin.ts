@@ -9,6 +9,7 @@ import { event } from "../lib/events";
 import { requireAdmin, createSession, secretEqual, publicOrganisation } from "../lib/session";
 import { publicOrder } from "../lib/order-service";
 import { integrationStatus } from "../lib/agenticorg";
+import { rescoreListing } from "../lib/models-service";
 
 const router = Router();
 async function revenue() {
@@ -90,7 +91,9 @@ router.patch("/admin/listings/:id", requireAdmin, async (req, res) => {
   if (!input.success || !params.success) { res.status(400).json({ error: "Choose a listing and visibility." }); return; }
   const [listing] = await db.update(listingsTable).set({ hidden: input.data.hidden }).where(eq(listingsTable.id, params.data.id)).returning();
   if (!listing) { res.status(404).json({ error: "Listing not found." }); return; }
+  await rescoreListing(listing.id);
+  const [scoredListing] = await db.select().from(listingsTable).where(eq(listingsTable.id, listing.id));
   await event("listing_visibility", null, { listing_id: listing.id, hidden: listing.hidden });
-  res.json(UpdateListingVisibilityResponse.parse(listing));
+  res.json(UpdateListingVisibilityResponse.parse(scoredListing ?? listing));
 });
 export default router;

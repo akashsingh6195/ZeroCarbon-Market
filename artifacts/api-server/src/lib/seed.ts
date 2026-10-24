@@ -1,4 +1,5 @@
 import { db, listingsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { logger } from "./logger";
 
 // Deliberately fictional. Never represents registry availability or verified credits.
@@ -17,13 +18,48 @@ const projects = [
   ["Solapur Cement Efficiency", "Maharashtra", "india_compliance", "reduction", "retired", 2024, "Demo CCTS", "Waste heat recovery", 1450, 600, null, 85, 17.659, 75.907],
 ] as const;
 
+const issuedDocuments = [
+  "registry statement showing serial numbers",
+  "verification report",
+  "project design document",
+  "land or project ownership proof",
+];
+const futureDocuments = [
+  "project design document or registration proof",
+  "planting plan",
+  "land or project ownership proof",
+  "delivery schedule",
+];
+const deliberatelyMissingDocuments: Record<number, string[]> = {
+  1: ["verification report"],
+  4: ["planting plan", "delivery schedule"],
+  10: ["land or project ownership proof"],
+};
+
 export async function seedListings() {
-  const existing = await db.select({ id: listingsTable.id }).from(listingsTable).limit(1);
-  if (existing.length) return;
-  await db.insert(listingsTable).values(projects.map((p) => ({
+  const existing = await db.select({
+    id: listingsTable.id,
+    project_name: listingsTable.project_name,
+    documents: listingsTable.documents,
+    demo: listingsTable.demo,
+  }).from(listingsTable);
+  if (existing.length) {
+    const byName = new Map(existing.map(listing => [listing.project_name, listing]));
+    await Promise.all(projects.map(async (project, index) => {
+      const listing = byName.get(project[0]);
+      if (!listing?.demo || listing.documents.length) return;
+      const documents = (project[4] === "future" ? futureDocuments : issuedDocuments)
+        .filter(document => !deliberatelyMissingDocuments[index]?.includes(document));
+      await db.update(listingsTable).set({ documents }).where(eq(listingsTable.id, listing.id));
+    }));
+    return;
+  }
+  await db.insert(listingsTable).values(projects.map((p, index) => ({
     project_name: p[0], region: p[1], market: p[2], action: p[3], status: p[4],
     vintage: p[5], registry: p[6], method: p[7], price_inr_per_t: p[8], quantity_t: p[9],
     delivery_year: p[10], zerocarbon_score: p[11], lat: p[12], lon: p[13],
+    documents: (p[4] === "future" ? futureDocuments : issuedDocuments)
+      .filter(document => !deliberatelyMissingDocuments[index]?.includes(document)),
     description: `A clearly fictional ${p[7].toLowerCase()} demonstration project in ${p[1]}. Explore how ${p[3]} credits are labelled and compared. This listing, its score, price and serial numbers are demo data, not verified registry records. No real credits are offered or transferred.`,
     demo: true, hidden: false,
   })));

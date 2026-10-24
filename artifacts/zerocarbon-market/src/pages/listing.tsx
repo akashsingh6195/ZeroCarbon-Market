@@ -58,6 +58,21 @@ export default function ListingPage() {
                     <div className="text-sm">Our label check on method, registry and evidence. Out of 100.</div>
                   </div>
                 </div>
+                <div className="mt-4 rounded-xl border border-dashed bg-secondary/50 p-3" data-testid="section-score-reasons">
+                  <h2 className="text-sm font-semibold">Why {l.zerocarbon_score}/100</h2>
+                  {l.score_flags.length === 0 ? (
+                    <p className="mt-2 text-sm">Full marks on our label check: documents in place, no overlapping boundaries, no double listing.</p>
+                  ) : (
+                    <ul className="mt-2 space-y-1.5 text-sm">
+                      {l.score_flags.map((flag, index) => (
+                        <li key={`${flag.points}-${index}`}>−{flag.points}: {flag.detail}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+                    How we score: we start at 100 and take points off for missing documents (10), a future listing with no delivery year (15), trees that are cut and sold without a long-term cap (20), a boundary that overlaps another listing (30), tree loss after the credits were issued (30), and the same serial numbers listed twice (40).
+                  </p>
+                </div>
                 <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-dashed pt-4 text-sm">
                   <div><dt className="text-xs text-muted-foreground">Price</dt><dd className="text-xl font-bold" data-testid="text-price">{inr(l.price_inr_per_t)}<span className="text-xs font-normal"> / t</span></dd></div>
                   <div><dt className="text-xs text-muted-foreground">Available</dt><dd className="text-xl font-bold">{num(l.quantity_t)} t</dd></div>

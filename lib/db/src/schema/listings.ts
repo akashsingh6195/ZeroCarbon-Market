@@ -1,7 +1,9 @@
-import { pgTable, text, integer, doublePrecision, boolean, check } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, doublePrecision, boolean, check, jsonb, timestamp } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { organisationsTable } from "./organisations";
+
+export type ListingScoreFlag = { points: number; detail: string };
 
 export const listingsTable = pgTable("listings", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -17,6 +19,9 @@ export const listingsTable = pgTable("listings", {
   quantity_t: doublePrecision("quantity_t").notNull(),
   delivery_year: integer("delivery_year"),
   zerocarbon_score: integer("zerocarbon_score").notNull(),
+  documents: text("documents").array().notNull().default([]),
+  score_flags: jsonb("score_flags").$type<ListingScoreFlag[]>().notNull().default([]),
+  score_checked_at: timestamp("score_checked_at", { withTimezone: true }),
   seller_org_id: text("seller_org_id").references(() => organisationsTable.id),
   lat: doublePrecision("lat").notNull(),
   lon: doublePrecision("lon").notNull(),

@@ -3,6 +3,7 @@ import { AskZeroCarbonBody, AskZeroCarbonResponse, ScanLandBody, ScanLandRespons
 import { organisation } from "../lib/session";
 import { agenticorg, guard, guardLocally, blockedPhrases, validateContract } from "../lib/agenticorg";
 import { event } from "../lib/events";
+import { getScanRoutes, type ScanRoutesResult } from "../lib/models-service";
 
 const router = Router();
 const safeScreens = new Set(["/", "/market", "/scan", "/orders", "/ask", "/signup", "/comply"]);
@@ -53,10 +54,8 @@ function inKarnataka(lat: number, lon: number) {
   }
   return inside;
 }
-function hasRange(value: unknown): value is string {
-  return typeof value === "string" && /\d[\d,.]*\s*(?:–|-|to)\s*(?:₹|Rs\.?\s*)?\d/i.test(value);
-}
 type ScanResultContract = {
+  location: { area_ha: number };
   verdict: "likely_eligible" | "needs_checks" | "not_eligible";
   reasons: string[];
   species: { name: string; why: string }[];
@@ -135,7 +134,24 @@ router.post("/scan", async (req, res) => {
       await event("model_call", org?.id ?? null, { model: "scan", duration_ms: Date.now() - started, result: "failed" });
       throw err;
     }
-    const fallback = ScanLandResponse.parse({ available: true, message: "", verdict: raw.verdict, ...fallbackScanCard(raw) });
+    const scanData = raw as unknown as ScanResultContract;
+    const routesPromise: Promise<ScanRoutesResult | undefined> =
+      (scanData.verdict === "likely_eligible" || scanData.verdict === "needs_checks") &&
+      scanData.credits_per_year
+      ? getScanRoutes(scanData.location.area_ha, scanData.credits_per_year.likely)
+        .catch((err) => {
+          req.log.info({ reason: err instanceof Error ? err.message : "Unknown routes error" }, "Scan route options unavailable");
+          return undefined;
+        })
+      : Promise.resolve(undefined);
+    const fallbackContent = fallbackScanCard(raw);
+    const fallback = async () => {
+      const routeOptions = await routesPromise;
+      return ScanLandResponse.parse({
+        available: true, message: "", verdict: raw.verdict, ...fallbackContent,
+        ...(routeOptions ? { routes: routeOptions } : {}),
+      });
+    };
     try {
     const card = await agenticorg.run("LAND_SCOUT", {
         task: "Explain this ZeroCarbon Scan result for the landowner.",
@@ -149,21 +165,21 @@ router.post("/scan", async (req, res) => {
       typeof card.cannot_see === "string" ? card.cannot_see : "";
     const whatToPlant = Array.isArray(card.what_to_plant) ? card.what_to_plant.filter((x): x is string => typeof x === "string").join("\n") :
       typeof card.what_to_plant === "string" ? card.what_to_plant : "";
-    const creditsLine = typeof card.credits_line === "string" && hasRange(card.credits_line) ? card.credits_line : "";
-    const moneyLine = typeof card.money_line === "string" && hasRange(card.money_line) ? card.money_line : "";
+    const routeOptions = await routesPromise;
     res.json(ScanLandResponse.parse({
       available: true, message: "", verdict: raw.verdict,
       headline: await guarded(card.headline, "Your demo land scan is ready"),
       reasons: await Promise.all(why.filter(x => x.trim()).slice(0, 3).map(x => guarded(x, ""))),
       next_step: await guarded(card.next_step, "Arrange an on-site assessment before making a decision."),
       ...(whatToPlant.trim() ? { what_to_plant: await guarded(whatToPlant, "") } : {}),
-      ...(creditsLine ? { credits_line: await guarded(creditsLine, "") } : {}),
-      ...(moneyLine ? { money_line: await guarded(moneyLine, "") } : {}),
+      ...(fallbackContent.credits_line ? { credits_line: fallbackContent.credits_line } : {}),
+      ...(fallbackContent.money_line ? { money_line: fallbackContent.money_line } : {}),
       ...(cannotSee.trim() ? { limitations: await guarded(cannotSee, "") } : {}),
+      ...(routeOptions ? { routes: routeOptions } : {}),
     }));
     } catch {
       req.log.info("Land Scout card unavailable; using validated ScanResult");
-      res.json(fallback);
+      res.json(await fallback());
     }
   } catch (err) {
     req.log.warn({ reason: err instanceof Error ? err.message : "Unknown scan error" }, "Scan unavailable");

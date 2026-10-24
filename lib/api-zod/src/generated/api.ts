@@ -71,6 +71,10 @@ export const GetListingsQueryParams = zod.object({
   "search": zod.coerce.string().optional()
 })
 
+export const getListingsResponseScoreFlagsItemPointsMin = 0;
+
+
+
 export const GetListingsResponseItem = zod.object({
   "id": zod.number().int(),
   "project_name": zod.string(),
@@ -85,6 +89,12 @@ export const GetListingsResponseItem = zod.object({
   "quantity_t": zod.number(),
   "delivery_year": zod.number().int().nullable(),
   "zerocarbon_score": zod.number().int(),
+  "documents": zod.array(zod.string()),
+  "score_flags": zod.array(zod.object({
+  "points": zod.number().int().min(getListingsResponseScoreFlagsItemPointsMin),
+  "detail": zod.string()
+})),
+  "score_checked_at": zod.coerce.date().nullable(),
   "seller_org_id": zod.string().nullish(),
   "lat": zod.number(),
   "lon": zod.number(),
@@ -98,6 +108,10 @@ export const GetListingsResponse = zod.array(GetListingsResponseItem)
 export const GetListingParams = zod.object({
   "id": zod.coerce.number().int()
 })
+
+export const getListingResponseScoreFlagsItemPointsMin = 0;
+
+
 
 export const GetListingResponse = zod.object({
   "id": zod.number().int(),
@@ -113,6 +127,12 @@ export const GetListingResponse = zod.object({
   "quantity_t": zod.number(),
   "delivery_year": zod.number().int().nullable(),
   "zerocarbon_score": zod.number().int(),
+  "documents": zod.array(zod.string()),
+  "score_flags": zod.array(zod.object({
+  "points": zod.number().int().min(getListingResponseScoreFlagsItemPointsMin),
+  "detail": zod.string()
+})),
+  "score_checked_at": zod.coerce.date().nullable(),
   "seller_org_id": zod.string().nullish(),
   "lat": zod.number(),
   "lon": zod.number(),
@@ -139,6 +159,10 @@ export const InterpretNeedBody = zod.object({
   "sentence": zod.string().min(1).max(interpretNeedBodySentenceMax)
 })
 
+export const interpretNeedResponseRankedItemListingScoreFlagsItemPointsMin = 0;
+
+
+
 export const InterpretNeedResponse = zod.object({
   "available": zod.boolean(),
   "message": zod.string(),
@@ -159,6 +183,12 @@ export const InterpretNeedResponse = zod.object({
   "quantity_t": zod.number(),
   "delivery_year": zod.number().int().nullable(),
   "zerocarbon_score": zod.number().int(),
+  "documents": zod.array(zod.string()),
+  "score_flags": zod.array(zod.object({
+  "points": zod.number().int().min(interpretNeedResponseRankedItemListingScoreFlagsItemPointsMin),
+  "detail": zod.string()
+})),
+  "score_checked_at": zod.coerce.date().nullable(),
   "seller_org_id": zod.string().nullish(),
   "lat": zod.number(),
   "lon": zod.number(),
@@ -190,6 +220,10 @@ export const CheckClaimResponse = zod.object({
 })
 
 
+export const getOrdersResponseListingScoreFlagsItemPointsMin = 0;
+
+
+
 export const GetOrdersResponseItem = zod.object({
   "id": zod.string(),
   "listing": zod.object({
@@ -206,6 +240,12 @@ export const GetOrdersResponseItem = zod.object({
   "quantity_t": zod.number(),
   "delivery_year": zod.number().int().nullable(),
   "zerocarbon_score": zod.number().int(),
+  "documents": zod.array(zod.string()),
+  "score_flags": zod.array(zod.object({
+  "points": zod.number().int().min(getOrdersResponseListingScoreFlagsItemPointsMin),
+  "detail": zod.string()
+})),
+  "score_checked_at": zod.coerce.date().nullable(),
   "seller_org_id": zod.string().nullish(),
   "lat": zod.number(),
   "lon": zod.number(),
@@ -243,6 +283,10 @@ export const CreateOrderBody = zod.object({
   "demo_payment_approved": zod.boolean()
 })
 
+export const createOrderResponseListingScoreFlagsItemPointsMin = 0;
+
+
+
 export const CreateOrderResponse = zod.object({
   "id": zod.string(),
   "listing": zod.object({
@@ -259,6 +303,12 @@ export const CreateOrderResponse = zod.object({
   "quantity_t": zod.number(),
   "delivery_year": zod.number().int().nullable(),
   "zerocarbon_score": zod.number().int(),
+  "documents": zod.array(zod.string()),
+  "score_flags": zod.array(zod.object({
+  "points": zod.number().int().min(createOrderResponseListingScoreFlagsItemPointsMin),
+  "detail": zod.string()
+})),
+  "score_checked_at": zod.coerce.date().nullable(),
   "seller_org_id": zod.string().nullish(),
   "lat": zod.number(),
   "lon": zod.number(),
@@ -296,6 +346,10 @@ export const GetOrderParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const getOrderResponseListingScoreFlagsItemPointsMin = 0;
+
+
+
 export const GetOrderResponse = zod.object({
   "id": zod.string(),
   "listing": zod.object({
@@ -312,6 +366,12 @@ export const GetOrderResponse = zod.object({
   "quantity_t": zod.number(),
   "delivery_year": zod.number().int().nullable(),
   "zerocarbon_score": zod.number().int(),
+  "documents": zod.array(zod.string()),
+  "score_flags": zod.array(zod.object({
+  "points": zod.number().int().min(getOrderResponseListingScoreFlagsItemPointsMin),
+  "detail": zod.string()
+})),
+  "score_checked_at": zod.coerce.date().nullable(),
   "seller_org_id": zod.string().nullish(),
   "lat": zod.number(),
   "lon": zod.number(),
@@ -387,6 +447,18 @@ export const ScanLandBody = zod.object({
   "boundary_geojson": zod.record(zod.string(), zod.unknown()).optional()
 })
 
+export const scanLandResponseRoutesRoutesItemFeesInrFirstYearMin = 0;
+
+export const scanLandResponseRoutesRoutesItemFeesInrYearlyMin = 0;
+
+export const scanLandResponseRoutesRoutesItemFirstMoneyInMonthsLowMin = 0;
+
+export const scanLandResponseRoutesRoutesItemFirstMoneyInMonthsHighMin = 0;
+
+export const scanLandResponseRoutesMoneyLikelyInrPerYearMin = 0;
+
+
+
 export const ScanLandResponse = zod.object({
   "available": zod.boolean(),
   "message": zod.string(),
@@ -397,7 +469,44 @@ export const ScanLandResponse = zod.object({
   "credits_line": zod.string().optional(),
   "money_line": zod.string().optional(),
   "next_step": zod.string().optional(),
-  "limitations": zod.string().optional()
+  "limitations": zod.string().optional(),
+  "routes": zod.object({
+  "routes": zod.array(zod.object({
+  "route": zod.enum(['zerocarbon_pool', 'india_offset', 'voluntary']),
+  "fees_inr_first_year": zod.number().min(scanLandResponseRoutesRoutesItemFeesInrFirstYearMin),
+  "fees_inr_yearly": zod.number().min(scanLandResponseRoutesRoutesItemFeesInrYearlyMin),
+  "first_money_in_months": zod.object({
+  "low": zod.number().min(scanLandResponseRoutesRoutesItemFirstMoneyInMonthsLowMin),
+  "high": zod.number().min(scanLandResponseRoutesRoutesItemFirstMoneyInMonthsHighMin)
+}),
+  "paperwork": zod.string(),
+  "fixed_costs_exceed_likely_money": zod.boolean(),
+  "notes": zod.string()
+})),
+  "money_likely_inr_per_year": zod.number().min(scanLandResponseRoutesMoneyLikelyInrPerYearMin),
+  "source": zod.object({
+  "title": zod.string(),
+  "url": zod.string().url()
+})
+}).optional()
+})
+
+
+export const ForecastSampleComplianceResponse = zod.object({
+  "available": zod.boolean(),
+  "message": zod.string(),
+  "intensity_now": zod.number().optional(),
+  "target": zod.number().optional(),
+  "forecast_year_end": zod.object({
+  "low": zod.number(),
+  "high": zod.number(),
+  "likely": zod.number()
+}).optional(),
+  "shortfall_t": zod.object({
+  "low": zod.number(),
+  "high": zod.number(),
+  "likely": zod.number()
+}).optional()
 })
 
 
@@ -480,6 +589,12 @@ export const AdminLoginResponse = zod.object({
 })
 
 
+export const getAdminDashboardResponseListingsItemScoreFlagsItemPointsMin = 0;
+
+export const getAdminDashboardResponseOrdersItemListingScoreFlagsItemPointsMin = 0;
+
+
+
 export const GetAdminDashboardResponse = zod.object({
   "stats": zod.object({
   "signups": zod.number().int(),
@@ -504,6 +619,12 @@ export const GetAdminDashboardResponse = zod.object({
   "quantity_t": zod.number(),
   "delivery_year": zod.number().int().nullable(),
   "zerocarbon_score": zod.number().int(),
+  "documents": zod.array(zod.string()),
+  "score_flags": zod.array(zod.object({
+  "points": zod.number().int().min(getAdminDashboardResponseListingsItemScoreFlagsItemPointsMin),
+  "detail": zod.string()
+})),
+  "score_checked_at": zod.coerce.date().nullable(),
   "seller_org_id": zod.string().nullish(),
   "lat": zod.number(),
   "lon": zod.number(),
@@ -540,6 +661,12 @@ export const GetAdminDashboardResponse = zod.object({
   "quantity_t": zod.number(),
   "delivery_year": zod.number().int().nullable(),
   "zerocarbon_score": zod.number().int(),
+  "documents": zod.array(zod.string()),
+  "score_flags": zod.array(zod.object({
+  "points": zod.number().int().min(getAdminDashboardResponseOrdersItemListingScoreFlagsItemPointsMin),
+  "detail": zod.string()
+})),
+  "score_checked_at": zod.coerce.date().nullable(),
   "seller_org_id": zod.string().nullish(),
   "lat": zod.number(),
   "lon": zod.number(),
@@ -580,6 +707,10 @@ export const UpdateListingVisibilityBody = zod.object({
   "hidden": zod.boolean()
 })
 
+export const updateListingVisibilityResponseScoreFlagsItemPointsMin = 0;
+
+
+
 export const UpdateListingVisibilityResponse = zod.object({
   "id": zod.number().int(),
   "project_name": zod.string(),
@@ -594,6 +725,12 @@ export const UpdateListingVisibilityResponse = zod.object({
   "quantity_t": zod.number(),
   "delivery_year": zod.number().int().nullable(),
   "zerocarbon_score": zod.number().int(),
+  "documents": zod.array(zod.string()),
+  "score_flags": zod.array(zod.object({
+  "points": zod.number().int().min(updateListingVisibilityResponseScoreFlagsItemPointsMin),
+  "detail": zod.string()
+})),
+  "score_checked_at": zod.coerce.date().nullable(),
   "seller_org_id": zod.string().nullish(),
   "lat": zod.number(),
   "lon": zod.number(),
@@ -606,6 +743,10 @@ export const UpdateListingVisibilityResponse = zod.object({
 export const GetInternalListingsHeader = zod.object({
   "X-Internal-Key": zod.string()
 })
+
+export const getInternalListingsResponseScoreFlagsItemPointsMin = 0;
+
+
 
 export const GetInternalListingsResponseItem = zod.object({
   "id": zod.number().int(),
@@ -621,6 +762,12 @@ export const GetInternalListingsResponseItem = zod.object({
   "quantity_t": zod.number(),
   "delivery_year": zod.number().int().nullable(),
   "zerocarbon_score": zod.number().int(),
+  "documents": zod.array(zod.string()),
+  "score_flags": zod.array(zod.object({
+  "points": zod.number().int().min(getInternalListingsResponseScoreFlagsItemPointsMin),
+  "detail": zod.string()
+})),
+  "score_checked_at": zod.coerce.date().nullable(),
   "seller_org_id": zod.string().nullish(),
   "lat": zod.number(),
   "lon": zod.number(),

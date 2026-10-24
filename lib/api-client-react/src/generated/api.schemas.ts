@@ -102,6 +102,12 @@ export const ListingStatus = {
   retired: 'retired',
 } as const;
 
+export interface ScoreFlag {
+  /** @minimum 0 */
+  points: number;
+  detail: string;
+}
+
 export interface Listing {
   id: number;
   project_name: string;
@@ -117,6 +123,10 @@ export interface Listing {
   /** @nullable */
   delivery_year: number | null;
   zerocarbon_score: number;
+  documents: string[];
+  score_flags: ScoreFlag[];
+  /** @nullable */
+  score_checked_at: string | null;
   /** @nullable */
   seller_org_id?: string | null;
   lat: number;
@@ -124,6 +134,46 @@ export interface Listing {
   description: string;
   hidden: boolean;
   demo: boolean;
+}
+
+export type ScanRouteRoute = typeof ScanRouteRoute[keyof typeof ScanRouteRoute];
+
+
+export const ScanRouteRoute = {
+  zerocarbon_pool: 'zerocarbon_pool',
+  india_offset: 'india_offset',
+  voluntary: 'voluntary',
+} as const;
+
+export type ScanRouteFirstMoneyInMonths = {
+  /** @minimum 0 */
+  low: number;
+  /** @minimum 0 */
+  high: number;
+};
+
+export interface ScanRoute {
+  route: ScanRouteRoute;
+  /** @minimum 0 */
+  fees_inr_first_year: number;
+  /** @minimum 0 */
+  fees_inr_yearly: number;
+  first_money_in_months: ScanRouteFirstMoneyInMonths;
+  paperwork: string;
+  fixed_costs_exceed_likely_money: boolean;
+  notes: string;
+}
+
+export type ScanRoutesSource = {
+  title: string;
+  url: string;
+};
+
+export interface ScanRoutes {
+  routes: ScanRoute[];
+  /** @minimum 0 */
+  money_likely_inr_per_year: number;
+  source: ScanRoutesSource;
 }
 
 export interface MarketSummary {
@@ -272,6 +322,28 @@ export interface ScanResult {
   money_line?: string;
   next_step?: string;
   limitations?: string;
+  routes?: ScanRoutes;
+}
+
+export type SampleComplianceForecastForecastYearEnd = {
+  low: number;
+  high: number;
+  likely: number;
+};
+
+export type SampleComplianceForecastShortfallT = {
+  low: number;
+  high: number;
+  likely: number;
+};
+
+export interface SampleComplianceForecast {
+  available: boolean;
+  message: string;
+  intensity_now?: number;
+  target?: number;
+  forecast_year_end?: SampleComplianceForecastForecastYearEnd;
+  shortfall_t?: SampleComplianceForecastShortfallT;
 }
 
 export interface LiveStats {

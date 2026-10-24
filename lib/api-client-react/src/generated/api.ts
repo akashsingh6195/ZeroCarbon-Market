@@ -46,6 +46,7 @@ import type {
   OrganisationInput,
   PlanInterest,
   QuestionInput,
+  SampleComplianceForecast,
   ScanInput,
   ScanResult,
   Session,
@@ -1487,6 +1488,74 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getScanLandMutationOptions(options), queryClient);
+    }
+
+export const getForecastSampleComplianceUrl = () => {
+
+
+
+
+  return `/api/comply/sample-forecast`
+}
+
+export const forecastSampleCompliance = async ( options?: Parameters<typeof customFetch>[1]): Promise<SampleComplianceForecast> => {
+
+  return customFetch<SampleComplianceForecast>(getForecastSampleComplianceUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getForecastSampleComplianceMutationKey = () => ['forecastSampleCompliance'] as const;
+
+export const getForecastSampleComplianceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof forecastSampleCompliance>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof forecastSampleCompliance>>, TError,void, TContext> => {
+
+const mutationKey = getForecastSampleComplianceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof forecastSampleCompliance>>, void> = () => {
+
+
+          return  forecastSampleCompliance(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ForecastSampleComplianceMutationResult = NonNullable<Awaited<ReturnType<typeof forecastSampleCompliance>>>
+
+    export type ForecastSampleComplianceMutationError = ErrorType<unknown>
+
+
+    export const useForecastSampleCompliance = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof forecastSampleCompliance>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof forecastSampleCompliance>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getForecastSampleComplianceMutationOptions(options), queryClient);
     }
 
 export const getAskZeroCarbonUrl = () => {

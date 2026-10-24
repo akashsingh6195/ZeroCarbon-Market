@@ -8,6 +8,7 @@
 import type { ListingAction } from './listingAction';
 import type { ListingMarket } from './listingMarket';
 import type { ListingStatus } from './listingStatus';
+import type { ScoreFlag } from './scoreFlag';
 
 export interface Listing {
   id: number;
@@ -24,6 +25,10 @@ export interface Listing {
   /** @nullable */
   delivery_year: number | null;
   zerocarbon_score: number;
+  documents: string[];
+  score_flags: ScoreFlag[];
+  /** @nullable */
+  score_checked_at: Date | null;
   /** @nullable */
   seller_org_id?: string | null;
   lat: number;

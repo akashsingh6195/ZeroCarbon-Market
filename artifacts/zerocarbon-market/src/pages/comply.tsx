@@ -1,17 +1,29 @@
 import { Link } from 'wouter';
 import { Landmark, Check } from 'lucide-react';
 import { Page } from '@/components/zc/layout';
-import { useRecordPlanInterest, getGetAdminDashboardQueryKey } from '@workspace/api-client-react';
+import { useRecordPlanInterest, getGetAdminDashboardQueryKey, useForecastSampleCompliance, type SampleComplianceForecast } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { formatInr, formatPriceRange, pricing } from '@/lib/pricing';
 import { Button } from '@/components/ui/button';
 import { errMsg } from '@/lib/zc';
+import { DemoChip } from '@/components/zc/demo-chip';
 
 export default function Comply() {
   const qc = useQueryClient();
   const interest = useRecordPlanInterest();
+  const sampleForecast = useForecastSampleCompliance();
   const [thanks, setThanks] = useState(false);
+  const [sampleResult, setSampleResult] = useState<SampleComplianceForecast | null>(null);
+  const formatIntensity = (value: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 3 }).format(value);
+  const formatTonnes = (value: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(value));
+  const runSampleForecast = () => {
+    setSampleResult(null);
+    sampleForecast.mutate(undefined, {
+      onSuccess: setSampleResult,
+      onError: () => setSampleResult({ available: false, message: 'The sample could not be worked out right now.' }),
+    });
+  };
   return (
     <Page className="max-w-2xl">
       <div className="relative overflow-hidden rounded-3xl bg-[hsl(var(--registry))] p-8 text-[hsl(var(--paper))] rise md:p-12">
@@ -23,6 +35,36 @@ export default function Comply() {
           <Link href="/market" className="inline-flex h-12 items-center justify-center rounded-xl bg-[hsl(var(--paper))] px-5 font-semibold text-[hsl(var(--registry))]" data-testid="link-comply-market">Browse compliance listings</Link>
           <Link href="/ask" className="inline-flex h-12 items-center justify-center rounded-xl border border-[hsl(var(--paper)/0.5)] px-5 font-semibold" data-testid="link-comply-ask">Ask a question</Link>
         </div>
+        <section className="mt-8 rounded-2xl border border-[hsl(var(--paper)/0.25)] bg-[hsl(var(--paper)/0.08)] p-5" data-testid="section-sample-factory">
+          <h2 className="font-display text-2xl font-semibold">Preview a sample forecast</h2>
+          <p className="mt-2 text-sm text-[hsl(var(--paper)/0.85)]">Try a fixed, fictional factory sample. This does not submit real plant data.</p>
+          <Button className="mt-4 h-11" disabled={sampleForecast.isPending} onClick={runSampleForecast} data-testid="button-sample-factory">
+            {sampleForecast.isPending ? 'Working…' : 'Try it with a sample factory'}
+          </Button>
+          {sampleResult && (
+            <div className="mt-4 rounded-xl bg-[hsl(var(--paper))] p-4 text-[hsl(var(--ink))]" aria-live="polite" data-testid="result-sample-factory">
+              <div className="mb-3"><DemoChip /></div>
+              {sampleResult.available && sampleResult.intensity_now !== undefined && sampleResult.target !== undefined &&
+              sampleResult.forecast_year_end && sampleResult.shortfall_t ? (
+                <div className="space-y-2 text-sm">
+                  <p className="font-semibold">Sample factory (fictional), six months of data.</p>
+                  <p>Emissions now: {formatIntensity(sampleResult.intensity_now)} tonnes of CO2 per tonne of product. Target: {formatIntensity(sampleResult.target)}.</p>
+                  <p>By year end: {formatIntensity(sampleResult.forecast_year_end.low)} to {formatIntensity(sampleResult.forecast_year_end.high)}, most likely {formatIntensity(sampleResult.forecast_year_end.likely)}.</p>
+                  {sampleResult.shortfall_t.likely > 0 ? (
+                    <p>Likely shortfall: about {formatTonnes(sampleResult.shortfall_t.likely)} tonnes ({formatTonnes(sampleResult.shortfall_t.low)} to {formatTonnes(sampleResult.shortfall_t.high)}). The plant would need that many compliance credits, bought through India's power exchanges.</p>
+                  ) : (
+                    <p>On track: about {formatTonnes(Math.abs(sampleResult.shortfall_t.likely))} tonnes better than the target.</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">Counts fuel and electricity only. ZeroCarbon does not run an exchange or place bids.</p>
+                </div>
+              ) : (
+                <p className="text-sm" data-testid="text-sample-factory-unavailable">
+                  {sampleResult.message || 'The sample could not be worked out right now.'}
+                </p>
+              )}
+            </div>
+          )}
+        </section>
         <div className="mt-8 rounded-2xl border border-[hsl(var(--paper)/0.25)] bg-[hsl(var(--paper)/0.08)] p-5">
           <h2 className="font-display text-2xl font-semibold">A clear starting point</h2>
           <p className="mt-3 text-sm leading-relaxed">Comply Lite: a free readiness checklist and links to the official process. Comply Pro: {formatInr(pricing.packages.comply_pro.annual_inr)} a year for the compliance calendar, document checklist, scenario worksheets and reminders. Comply Enterprise: {formatPriceRange(pricing.packages.comply_enterprise.annual_min_inr, pricing.packages.comply_enterprise.annual_max_inr)} a year for many plants.</p>

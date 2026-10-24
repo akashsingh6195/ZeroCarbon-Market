@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { MapPin, PenLine, Undo2, Trash2, Sprout, Coins, Footprints, EyeOff, ScanLine } from 'lucide-react';
 import { useScanLand, getGetLiveStatsQueryKey, type ScanResult } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,6 +11,78 @@ import { errMsg } from '@/lib/zc';
 import { cn } from '@/lib/utils';
 import { formatFeeRate, formatInr, checkedOnLabel, pricing } from '@/lib/pricing';
 import { LandReviewBooking } from '@/components/zc/land-review-booking';
+
+const routeLabels: Record<NonNullable<ScanResult['routes']>['routes'][number]['route'], string> = {
+  zerocarbon_pool: 'Join ZeroCarbon Pool',
+  india_offset: 'Register your own Indian offset project',
+  voluntary: 'Go through a voluntary standard (such as Verra or Gold Standard)',
+};
+
+function ScanRouteOptions({ options }: { options: NonNullable<ScanResult['routes']> }) {
+  const firstYear = (amount: number) => amount === 0 ? 'Free to join' : formatInr(amount);
+  const voluntaryFeeNote = (route: string) => route === 'voluntary'
+    ? <span className="ml-1 text-[10px] text-muted-foreground">estimate, not yet checked</span>
+    : null;
+  const rows = options.routes;
+
+  return (
+    <section className="rounded-xl border border-[hsl(var(--leaf)/0.4)] bg-[hsl(var(--leaf)/0.06)] p-4" data-testid="section-scan-routes">
+      <h3 className="font-semibold">Three ways to earn from this land</h3>
+      <div className="mt-3 space-y-3 lg:hidden">
+        {rows.map((route) => (
+          <article key={route.route} className="rounded-lg border bg-card p-3 text-sm">
+            <h4 className="font-semibold">{routeLabels[route.route]}</h4>
+            {route.fixed_costs_exceed_likely_money && (
+              <p className="mt-1 text-xs font-medium text-destructive">Fees are more than this land's likely money.</p>
+            )}
+            <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">
+              <div><dt className="text-xs text-muted-foreground">Fees, first year</dt><dd>{firstYear(route.fees_inr_first_year)}{voluntaryFeeNote(route.route)}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Then each year</dt><dd>{formatInr(route.fees_inr_yearly)}{voluntaryFeeNote(route.route)}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">First money in</dt><dd>{route.first_money_in_months.low} to {route.first_money_in_months.high} months</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Paperwork</dt><dd>{route.paperwork}</dd></div>
+            </dl>
+            {route.notes && <p className="mt-2 text-xs text-muted-foreground">{route.notes}</p>}
+          </article>
+        ))}
+      </div>
+      <div className="mt-3 hidden lg:block">
+        <table className="w-full table-fixed border-collapse text-left text-xs" data-testid="table-scan-routes">
+          <thead>
+            <tr className="border-b text-muted-foreground">
+              <th className="w-[27%] pb-2 pr-2 font-medium">Route</th>
+              <th className="w-[17%] pb-2 pr-2 font-medium">Fees, first year</th>
+              <th className="w-[16%] pb-2 pr-2 font-medium">Then each year</th>
+              <th className="w-[16%] pb-2 pr-2 font-medium">First money in</th>
+              <th className="w-[24%] pb-2 font-medium">Paperwork</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((route) => (
+              <Fragment key={route.route}>
+                <tr className="align-top">
+                  <th className="py-2 pr-2 font-semibold">{routeLabels[route.route]}</th>
+                  <td className="py-2 pr-2">
+                    {firstYear(route.fees_inr_first_year)}
+                    {voluntaryFeeNote(route.route)}
+                    {route.fixed_costs_exceed_likely_money && <div className="mt-1 text-[10px] font-medium text-destructive">Fees are more than this land's likely money.</div>}
+                  </td>
+                  <td className="py-2 pr-2">{formatInr(route.fees_inr_yearly)}{voluntaryFeeNote(route.route)}</td>
+                  <td className="py-2 pr-2">{route.first_money_in_months.low} to {route.first_money_in_months.high} months</td>
+                  <td className="py-2">{route.paperwork}</td>
+                </tr>
+                {route.notes && <tr><td colSpan={5} className="border-b pb-2 text-[11px] text-muted-foreground">{route.notes}</td></tr>}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs leading-relaxed">
+        Likely money from this land: about {formatInr(options.money_likely_inr_per_year)} a year at demo prices. Official fees:{' '}
+        <a className="font-semibold underline underline-offset-2" href={options.source.url} target="_blank" rel="noreferrer">{options.source.title}</a>.
+      </p>
+    </section>
+  );
+}
 
 export default function Scan() {
   const qc = useQueryClient();
@@ -109,6 +181,7 @@ export default function Scan() {
                       </div>
                     );
                   })}
+                  {res.routes && <ScanRouteOptions options={res.routes} />}
                   {res.money_line && <p className="rounded-xl border border-[hsl(var(--leaf)/0.4)] bg-[hsl(var(--leaf)/0.08)] p-3 text-xs leading-relaxed" data-testid="text-scan-fee-disclosure">ZeroCarbon charges nothing upfront. If the credits are later sold through ZeroCarbon Market, {formatFeeRate(pricing.deal_fee.standard_rate)} of the sale goes to ZeroCarbon and the rest to the project, shared under your agreement.</p>}
                   {res.next_step?.toLowerCase().includes('first-year fee') && <p className="rounded-xl bg-secondary p-3 text-xs leading-relaxed" data-testid="text-scan-registry-fees">These are official registry fees at actual cost ({pricing.official_fees.set_by} schedule, checked {checkedOnLabel()}). Joining ZeroCarbon Pool is free, and the pool shares these fees across many farms.</p>}
                   {res.verdict !== 'not_eligible' && !/(not eligible|not likely)/i.test(res.headline) && <p className="text-xs text-muted-foreground" data-testid="text-scan-survey-option">Want help with photos? Doing it yourself is free; an assisted survey is {formatInr(pricing.packages.landowner.assisted_survey_inr)}, often paid by your FPO.</p>}

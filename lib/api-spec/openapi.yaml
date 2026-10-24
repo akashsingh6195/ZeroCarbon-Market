@@ -203,6 +203,15 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/ScanResult"}
+  /comply/sample-forecast:
+    post:
+      operationId: forecastSampleCompliance
+      responses:
+        "200":
+          description: Fictional sample factory forecast or explicit unavailability
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/SampleComplianceForecast"}
   /ask:
     post:
       operationId: askZeroCarbon
@@ -348,7 +357,7 @@ components:
         next_screen: {type: string}
     Listing:
       type: object
-      required: [id, project_name, region, market, action, status, vintage, registry, method, price_inr_per_t, quantity_t, delivery_year, zerocarbon_score, lat, lon, description, hidden, demo]
+      required: [id, project_name, region, market, action, status, vintage, registry, method, price_inr_per_t, quantity_t, delivery_year, zerocarbon_score, documents, score_flags, score_checked_at, lat, lon, description, hidden, demo]
       properties:
         id: {type: integer}
         project_name: {type: string}
@@ -363,12 +372,55 @@ components:
         quantity_t: {type: number}
         delivery_year: {type: [integer, "null"]}
         zerocarbon_score: {type: integer}
+        documents:
+          type: array
+          items: {type: string}
+        score_flags:
+          type: array
+          items: {$ref: "#/components/schemas/ScoreFlag"}
+        score_checked_at: {type: [string, "null"], format: date-time}
         seller_org_id: {type: [string, "null"]}
         lat: {type: number}
         lon: {type: number}
         description: {type: string}
         hidden: {type: boolean}
         demo: {type: boolean}
+    ScoreFlag:
+      type: object
+      required: [points, detail]
+      properties:
+        points: {type: integer, minimum: 0}
+        detail: {type: string}
+    ScanRoute:
+      type: object
+      required: [route, fees_inr_first_year, fees_inr_yearly, first_money_in_months, paperwork, fixed_costs_exceed_likely_money, notes]
+      properties:
+        route: {type: string, enum: [zerocarbon_pool, india_offset, voluntary]}
+        fees_inr_first_year: {type: number, minimum: 0}
+        fees_inr_yearly: {type: number, minimum: 0}
+        first_money_in_months:
+          type: object
+          required: [low, high]
+          properties:
+            low: {type: number, minimum: 0}
+            high: {type: number, minimum: 0}
+        paperwork: {type: string}
+        fixed_costs_exceed_likely_money: {type: boolean}
+        notes: {type: string}
+    ScanRoutes:
+      type: object
+      required: [routes, money_likely_inr_per_year, source]
+      properties:
+        routes:
+          type: array
+          items: {$ref: "#/components/schemas/ScanRoute"}
+        money_likely_inr_per_year: {type: number, minimum: 0}
+        source:
+          type: object
+          required: [title, url]
+          properties:
+            title: {type: string}
+            url: {type: string, format: uri}
     MarketSummary:
       type: object
       required: [listings, available_tonnes, regions, min_price, max_price]
@@ -503,6 +555,29 @@ components:
         money_line: {type: string}
         next_step: {type: string}
         limitations: {type: string}
+        routes: {$ref: "#/components/schemas/ScanRoutes"}
+    SampleComplianceForecast:
+      type: object
+      required: [available, message]
+      properties:
+        available: {type: boolean}
+        message: {type: string}
+        intensity_now: {type: number}
+        target: {type: number}
+        forecast_year_end:
+          type: object
+          required: [low, high, likely]
+          properties:
+            low: {type: number}
+            high: {type: number}
+            likely: {type: number}
+        shortfall_t:
+          type: object
+          required: [low, high, likely]
+          properties:
+            low: {type: number}
+            high: {type: number}
+            likely: {type: number}
     LiveStats:
       type: object
       required: [signups, orders, tonnes_retired, scans, qr_visits, fees_earned_inr, demo]

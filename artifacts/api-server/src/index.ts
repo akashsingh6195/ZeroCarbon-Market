@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { seedListings } from "./lib/seed";
 import { startOrderTicker } from "./lib/order-service";
+import { rescoreAllListings } from "./lib/models-service";
 
 const rawPort = process.env["PORT"];
 
@@ -27,6 +28,7 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  void rescoreAllListings().catch((err) => logger.error({ err }, "Initial listing scoring failed"));
 });
 }
 start().catch(err => { logger.error({ err }, "API startup failed"); process.exit(1); });

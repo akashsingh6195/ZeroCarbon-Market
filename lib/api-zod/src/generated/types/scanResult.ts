@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ScanResultVerdict } from './scanResultVerdict';
+import type { ScanRoutes } from './scanRoutes';
 
 export interface ScanResult {
   available: boolean;
@@ -18,4 +19,5 @@ export interface ScanResult {
   money_line?: string;
   next_step?: string;
   limitations?: string;
+  routes?: ScanRoutes;
 }
