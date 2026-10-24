@@ -148,14 +148,14 @@ function parseScanRoutes(value: unknown): ScanRoutesResult {
         : "";
     return {
       route: item.route as ScanRouteName,
-      fees_inr_first_year: item.fees_inr_first_year,
-      fees_inr_yearly: item.fees_inr_yearly,
+      fees_inr_first_year: item.fees_inr_first_year as number,
+      fees_inr_yearly: item.fees_inr_yearly as number,
       first_money_in_months: {
-        low: firstMoneyMonths.low,
-        high: firstMoneyMonths.high,
+        low: (firstMoneyMonths as { low: number }).low,
+        high: (firstMoneyMonths as { high: number }).high,
       },
-      paperwork: guardLocally(item.paperwork),
-      fixed_costs_exceed_likely_money: item.fixed_costs_exceed_likely_money,
+      paperwork: guardLocally(item.paperwork as string),
+      fixed_costs_exceed_likely_money: item.fixed_costs_exceed_likely_money as boolean,
       notes: guardLocally(notes),
     };
   });

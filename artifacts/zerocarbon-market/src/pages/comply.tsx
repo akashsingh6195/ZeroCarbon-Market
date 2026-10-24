@@ -15,7 +15,7 @@ export default function Comply() {
   const sampleForecast = useForecastSampleCompliance();
   const [thanks, setThanks] = useState(false);
   const [sampleResult, setSampleResult] = useState<SampleComplianceForecast | null>(null);
-  const formatIntensity = (value: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 3 }).format(value);
+  const formatIntensity = (value: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 4 }).format(value);
   const formatTonnes = (value: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(value));
   const runSampleForecast = () => {
     setSampleResult(null);
