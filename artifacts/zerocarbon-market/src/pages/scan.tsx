@@ -102,12 +102,12 @@ export default function Scan() {
                     return (
                       <div key={k as string} className="flex gap-3 border-t border-dashed pt-3">
                         <Icon className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--soil))]" />
-                        <div><div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{k as string}</div><p className="mt-0.5">{v as string}</p></div>
+                        <div><div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{k as string}</div><p className="mt-0.5 whitespace-pre-line">{v as string}</p></div>
                       </div>
                     );
                   })}
                   {res.limitations && (
-                    <div className="rounded-xl bg-secondary p-3"><div className="flex items-center gap-1.5 text-xs font-semibold"><EyeOff className="h-3.5 w-3.5" /> What satellites can't see</div><p className="mt-1">{res.limitations}</p></div>
+                    <div className="rounded-xl bg-secondary p-3"><div className="flex items-center gap-1.5 text-xs font-semibold"><EyeOff className="h-3.5 w-3.5" /> What satellites can't see</div><p className="mt-1 whitespace-pre-line">{res.limitations}</p></div>
                   )}
                   {res.message && <p className="text-xs text-muted-foreground">{res.message}</p>}
                 </div>

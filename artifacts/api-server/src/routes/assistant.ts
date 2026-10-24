@@ -56,6 +56,48 @@ function inKarnataka(lat: number, lon: number) {
 function hasRange(value: unknown): value is string {
   return typeof value === "string" && /\d[\d,.]*\s*(?:–|-|to)\s*(?:₹|Rs\.?\s*)?\d/i.test(value);
 }
+type ScanResultContract = {
+  verdict: "likely_eligible" | "needs_checks" | "not_eligible";
+  reasons: string[];
+  species: { name: string; why: string }[];
+  credits_per_year: { low: number; likely: number; high: number; unit: "tCO2e" } | null;
+  money_inr: { low: number; likely: number; high: number; basis: string } | null;
+  fixed_costs_inr: { first_year: number; yearly: number };
+  unseen: string[];
+};
+function fallbackScanCard(raw: Record<string, unknown>) {
+  const scan = raw as unknown as ScanResultContract;
+  const formatRupees = (amount: number) => new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(amount);
+  const headline = {
+    likely_eligible: "Likely eligible",
+    needs_checks: "Needs checks",
+    not_eligible: "Not eligible",
+  }[scan.verdict];
+  const credits = scan.credits_per_year;
+  const money = scan.money_inr;
+  const speciesName = (name: string) =>
+    name.trim().toLowerCase() === "tectona grandis" ? `${name} (teak)` : name;
+
+  return {
+    headline,
+    reasons: scan.reasons.slice(0, 3),
+    ...(scan.verdict !== "not_eligible" && scan.species.length
+      ? { what_to_plant: scan.species.map(({ name, why }) => `${speciesName(name)} — ${why}`).join("\n") }
+      : {}),
+    ...(credits
+      ? { credits_line: `About ${credits.low.toFixed(1)} to ${credits.high.toFixed(1)} tonnes of CO2 a year, most likely ${credits.likely.toFixed(1)}.` }
+      : {}),
+    ...(money
+      ? { money_line: `Roughly Rs ${formatRupees(money.low)} to Rs ${formatRupees(money.high)} a year at demo prices, before fees.` }
+      : {}),
+    next_step: scan.verdict === "not_eligible"
+      ? "This land is unlikely to earn credits as it is."
+      : money && money.likely < scan.fixed_costs_inr.first_year
+        ? `Join ZeroCarbon Pool: on your own, the first-year fees (Rs ${formatRupees(scan.fixed_costs_inr.first_year)}) are more than the likely money.`
+        : "Fill in the details satellites cannot see.",
+    limitations: scan.unseen.join("\n"),
+  };
+}
 router.post("/scan", async (req, res) => {
   const input = ScanLandBody.safeParse(req.body);
   if (!input.success) { res.status(400).json({ error: "Choose a valid map pin." }); return; }
@@ -83,7 +125,7 @@ router.post("/scan", async (req, res) => {
     const started = Date.now();
     let raw: Record<string, unknown>;
     try {
-      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": key }, body: JSON.stringify(data), signal: AbortSignal.timeout(8000) });
+      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": key }, body: JSON.stringify(data), signal: AbortSignal.timeout(12000) });
       if (!response.ok) throw new Error("Models service failed");
       raw = await validateContract("ScanResult", await response.json());
       await event("model_call", org?.id ?? null, { model: "scan", duration_ms: Date.now() - started, result: "success" });
@@ -91,8 +133,12 @@ router.post("/scan", async (req, res) => {
       await event("model_call", org?.id ?? null, { model: "scan", duration_ms: Date.now() - started, result: "failed" });
       throw err;
     }
-    let card = raw;
-    try { card = await agenticorg.run("LAND_SCOUT", { ...data, scan: raw }, org?.id); } catch { /* Models-only card. */ }
+    let card: Record<string, unknown> | null = null;
+    try { card = await agenticorg.run("LAND_SCOUT", { ...data, scan: raw }, org?.id); } catch { /* Use the deterministic ScanResult card. */ }
+    if (!card) {
+      res.json(ScanLandResponse.parse({ available: true, message: "", ...fallbackScanCard(raw) }));
+      return;
+    }
     const guarded = async (value: unknown, fixed: string) => guard(typeof value === "string" ? value : fixed, "scan", org?.roles.join(",") ?? "Seller", org?.id);
     res.json(ScanLandResponse.parse({
       available: true, message: "",
