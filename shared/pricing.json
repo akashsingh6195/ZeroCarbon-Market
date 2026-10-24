@@ -1,20 +1,6 @@
 {
   "checked_on": "2026-10-24",
   "status": "Proposed launch prices",
-  "land_review": {
-    "price_inr": 299,
-    "visit_within_days": 7,
-    "proposal_within_days": 3,
-    "refund_window_days": 7,
-    "refund_if_no_visit_days": 14,
-    "area": "Karnataka",
-    "form_fields": {
-      "name": "entry.854216526",
-      "product": "entry.104761457",
-      "amount": "entry.176162690",
-      "notes": "entry.1819906416"
-    }
-  },
   "deal_fee": {
     "standard_rate": 0.06,
     "large_repeat_min_rate": 0.03,

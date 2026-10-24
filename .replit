@@ -31,8 +31,6 @@ AGENT_ID_LAND_SCOUT = "7e80e8f6-036d-4ec4-8016-1c43df7d831a"
 AGENT_ID_LISTING_MATCHER = "4a953991-98ef-4b2b-a0a6-bd944fc37b63"
 AGENT_ID_NEED_INTERPRETER = "99f607c7-6b76-402d-9aa7-a1b4f37dffe2"
 AGENT_ID_ORDER_CONCIERGE = "f675e0eb-0c85-48d5-adcd-423fe0698f6a"
-LAND_REVIEW_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSdUzh8ArXMPLcmJJQQa0wl9coZYEJbluKqLIxf1tnTLHn7wYg/viewform"
-PAYMENTS_MODE = "demo"
 
 [nix]
 channel = "stable-25_05"

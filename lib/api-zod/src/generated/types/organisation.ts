@@ -9,7 +9,6 @@
 export interface Organisation {
   id: string;
   name: string;
-  phone: string;
   organisation_name: string;
   roles: string[];
   buyer_type: string;

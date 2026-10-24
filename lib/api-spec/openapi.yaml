@@ -279,138 +279,6 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Listing"}
-  /land-reviews:
-    get:
-      operationId: getLandReviews
-      responses:
-        "200":
-          description: Land reviews belonging to the signed-in organisation
-          content:
-            application/json:
-              schema: {type: array, items: {$ref: "#/components/schemas/LandReview"}}
-    post:
-      operationId: createLandReview
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [scan_token]
-              properties:
-                scan_token: {type: string, minLength: 1, maxLength: 50000}
-      responses:
-        "201":
-          description: Booking created; payment still awaits team confirmation
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/LandReview"}
-  /land-reviews/{id}:
-    get:
-      operationId: getLandReview
-      parameters:
-        - {name: id, in: path, required: true, schema: {type: integer, minimum: 1}}
-      responses:
-        "200":
-          description: Private land review
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/LandReview"}
-  /land-reviews/{id}/decision:
-    post:
-      operationId: decideLandReview
-      parameters:
-        - {name: id, in: path, required: true, schema: {type: integer, minimum: 1}}
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [action]
-              properties:
-                action: {type: string, enum: [accept, refund]}
-                reason: {type: string, maxLength: 2000}
-      responses:
-        "200":
-          description: Updated booking
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/LandReview"}
-  /land-reviews/{id}/proposal-file:
-    get:
-      operationId: downloadLandReviewProposal
-      parameters:
-        - {name: id, in: path, required: true, schema: {type: integer, minimum: 1}}
-      responses:
-        "200":
-          description: Private proposal PDF, only for its owner or an authenticated administrator
-          content:
-            application/pdf:
-              schema: {type: string, format: binary}
-  /admin/land-reviews:
-    get:
-      operationId: getAdminLandReviews
-      responses:
-        "200":
-          description: Private land-review operations and separate revenue
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/AdminLandReviews"}
-  /admin/land-reviews/{id}:
-    patch:
-      operationId: updateAdminLandReview
-      parameters:
-        - {name: id, in: path, required: true, schema: {type: integer, minimum: 1}}
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [action]
-              properties:
-                action: {type: string, enum: [form_filled, mark_paid, schedule, visited, proposal, refund, mark_refunded]}
-                form_filled: {type: boolean}
-                payment_utr: {type: string, minLength: 6, maxLength: 80}
-                refund_utr: {type: string, minLength: 6, maxLength: 80}
-                visit_date: {type: string, format: date}
-                field_partner: {type: string, minLength: 1, maxLength: 120}
-                proposal_text: {type: string, minLength: 1, maxLength: 20000}
-                proposal_file: {type: string, maxLength: 500}
-      responses:
-        "200":
-          description: Updated booking
-          content:
-            application/json:
-              schema: {$ref: "#/components/schemas/LandReview"}
-  /admin/land-reviews/{id}/proposal-upload:
-    post:
-      operationId: requestLandReviewProposalUpload
-      parameters:
-        - {name: id, in: path, required: true, schema: {type: integer, minimum: 1}}
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [name, size, content_type]
-              properties:
-                name: {type: string, minLength: 1, maxLength: 200}
-                size: {type: integer, minimum: 1, maximum: 5242880}
-                content_type: {type: string, enum: [application/pdf]}
-      responses:
-        "200":
-          description: Admin-only direct-to-storage upload
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [upload_url, object_path]
-                properties:
-                  upload_url: {type: string}
-                  object_path: {type: string}
   /internal/listings:
     get:
       operationId: getInternalListings
@@ -451,11 +319,10 @@ components:
         seller_type: {type: string, enum: [land, project, credits]}
     Organisation:
       type: object
-      required: [id, name, phone, organisation_name, roles, buyer_type]
+      required: [id, name, organisation_name, roles, buyer_type]
       properties:
         id: {type: string}
         name: {type: string}
-        phone: {type: string}
         organisation_name: {type: string}
         roles:
           type: array
@@ -618,7 +485,6 @@ components:
         available: {type: boolean}
         message: {type: string}
         verdict: {type: string, enum: [likely_eligible, needs_checks, not_eligible]}
-        review_token: {type: string}
         headline: {type: string}
         reasons:
           type: array
@@ -628,61 +494,6 @@ components:
         money_line: {type: string}
         next_step: {type: string}
         limitations: {type: string}
-    LandReview:
-      type: object
-      required: [id, booking_id, name, phone, lat, lon, boundary_geojson, scan_json, form_filled, price_inr, payment_mode, payment_provider, status, field_partner, visit_date, proposal_text, proposal_file, proposal_sent_at, refund_reason, created_at, paid_at, refunded_at, form_url, upi_id, refund_deadline, can_refund, no_visit_refund, payment_utr, refund_utr]
-      properties:
-        id: {type: integer}
-        booking_id: {type: string}
-        name: {type: string}
-        phone: {type: string}
-        lat: {type: number}
-        lon: {type: number}
-        boundary_geojson: {type: [object, "null"], additionalProperties: true}
-        scan_json: {type: object, additionalProperties: true}
-        form_filled: {type: boolean}
-        price_inr: {type: integer}
-        payment_mode: {type: string, enum: [demo, real]}
-        payment_provider: {type: string, enum: [manual_upi, pinelabs, demo]}
-        status: {type: string, enum: [awaiting_payment, paid, visit_scheduled, visited, proposal_ready, accepted, refund_requested, refunded, cancelled]}
-        field_partner: {type: [string, "null"]}
-        visit_date: {type: [string, "null"]}
-        proposal_text: {type: [string, "null"]}
-        proposal_file: {type: [string, "null"]}
-        proposal_sent_at: {type: [string, "null"]}
-        refund_reason: {type: [string, "null"]}
-        created_at: {type: string}
-        paid_at: {type: [string, "null"]}
-        refunded_at: {type: [string, "null"]}
-        form_url: {type: [string, "null"]}
-        upi_id: {type: [string, "null"]}
-        refund_deadline: {type: [string, "null"]}
-        can_refund: {type: boolean}
-        no_visit_refund: {type: boolean}
-        payment_utr: {type: [string, "null"]}
-        refund_utr: {type: [string, "null"]}
-    LandReviewRevenue:
-      type: object
-      required: [paid_count, refunded_count, paid_inr, refunded_inr, net_inr]
-      properties:
-        paid_count: {type: integer}
-        refunded_count: {type: integer}
-        paid_inr: {type: integer}
-        refunded_inr: {type: integer}
-        net_inr: {type: integer}
-    AdminLandReviews:
-      type: object
-      required: [reviews, revenue, payment_warning, form_responses_url]
-      properties:
-        reviews: {type: array, items: {$ref: "#/components/schemas/LandReview"}}
-        revenue:
-          type: object
-          required: [demo, real]
-          properties:
-            demo: {$ref: "#/components/schemas/LandReviewRevenue"}
-            real: {$ref: "#/components/schemas/LandReviewRevenue"}
-        payment_warning: {type: [string, "null"]}
-        form_responses_url: {type: [string, "null"]}
     LiveStats:
       type: object
       required: [signups, orders, tonnes_retired, scans, qr_visits, fees_earned_inr, demo]
