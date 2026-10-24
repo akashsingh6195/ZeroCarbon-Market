@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { errMsg, errStatus, fmtDate, inr, num } from '@/lib/zc';
+import { formatInr } from '@/lib/pricing';
 
 function pick(p: Record<string, unknown>, keys: string[]) {
   for (const k of keys) if (p[k] !== undefined && p[k] !== null) return p[k];
@@ -90,6 +91,21 @@ export default function Admin() {
               ))}
             </div>
             <p className="text-sm"><span className="text-muted-foreground">Integrations: </span><span data-testid="text-integration-status">{d.integration_status}</span></p>
+
+            <section className="rounded-2xl border border-[hsl(var(--leaf)/0.55)] bg-[hsl(var(--leaf)/0.08)] p-5" data-testid="panel-revenue">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><h2 className="font-display text-2xl font-semibold">Revenue (demo)</h2><DemoChip /></div>
+              <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  ['Fees earned', formatInr(d.revenue.fees_earned_inr)],
+                  ['Fees pending', formatInr(d.revenue.fees_pending_inr)],
+                  ['Completed voluntary orders', num(d.revenue.completed_voluntary_orders)],
+                  ['Credit value traded', formatInr(d.revenue.credit_value_traded_inr)],
+                ].map(([label, value], i) => <div key={label} className={`rounded-xl border bg-card p-4 ${i === 3 ? 'border-dashed' : ''}`} data-testid={`revenue-${i}`}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 text-xl font-bold tabular-nums">{value}</dd>{i === 3 && <p className="mt-1 text-xs font-semibold text-[hsl(var(--soil))]">Not ZeroCarbon revenue</p>}</div>)}
+              </dl>
+              <div className="mt-4 border-t border-dashed pt-4"><h3 className="text-sm font-semibold">Plan interest by plan</h3>
+                {Object.keys(d.revenue.plan_interest_counts).length ? <ul className="mt-2 flex flex-wrap gap-2">{Object.entries(d.revenue.plan_interest_counts).map(([plan, count]) => <li key={plan} className="rounded-lg border bg-card px-3 py-2 text-sm" data-testid={`interest-count-${plan}`}>{plan.replaceAll('_', ' ')} <strong className="ml-2 tabular-nums">{count}</strong></li>)}</ul> : <p className="mt-2 text-sm text-muted-foreground">No interest recorded yet.</p>}
+              </div>
+            </section>
 
             <section>
               <h2 className="mb-3 font-semibold">Agent call times and failures</h2>

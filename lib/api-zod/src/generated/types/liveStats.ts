@@ -12,5 +12,6 @@ export interface LiveStats {
   tonnes_retired: number;
   scans: number;
   qr_visits: number;
+  fees_earned_inr: number;
   demo: boolean;
 }

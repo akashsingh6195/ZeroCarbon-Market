@@ -6,15 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useSession } from '@/lib/session';
 import { errMsg } from '@/lib/zc';
+import { formatFeeRate, pricing } from '@/lib/pricing';
 
 type Turn = { q: string; a?: Answer; error?: string };
 
 const SUGGEST = [
+  'How does ZeroCarbon make money?',
   'What is the difference between removal and avoidance?',
   'What does a Future listing mean?',
   'How do I check my land?',
   'Is any of this real money?',
 ];
+const REVENUE_ANSWER = `Checking land, listing credits and browsing are free. We earn from yearly plans for FPOs, project developers, companies and traders, from optional services that are quoted first, and from a ${formatFeeRate(pricing.deal_fee.standard_rate)} fee the seller pays when a voluntary deal completes. We never charge for government approval, registry fees or independent audits; those official fees are shown at actual cost. Demo: no payment is taken.`;
 
 export function AskPanel({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
@@ -25,7 +28,13 @@ export function AskPanel({ onNavigate }: { onNavigate?: () => void }) {
 
   const send = (q: string) => {
     const question = q.trim();
-    if (!question || ask.isPending) return;
+    if (!question) return;
+    if (question.toLowerCase().replace(/[?.!]/g, '').trim() === 'how does zerocarbon make money') {
+      setText('');
+      setTurns((t) => [...t, { q: question, a: { answer: REVENUE_ANSWER, see_screen: '/pricing', escalate: false, available: true } }]);
+      return;
+    }
+    if (ask.isPending) return;
     setText('');
     setTurns((t) => [...t, { q: question }]);
     ask.mutate(

@@ -3,6 +3,7 @@ import { and, eq, lt, inArray } from "drizzle-orm";
 import { defaultClaim } from "./market";
 import { agenticorg, guard } from "./agenticorg";
 import { logger } from "./logger";
+import { feeStatusForOrder, isCancelledBeforeDelivery } from "./pricing";
 
 export function orderStages(route: string) {
   return route === "india_offset"
@@ -23,6 +24,7 @@ export function publicOrder(row: OrderRow) {
   return {
     id: row.id, listing: row.listing_snapshot,
     quantity_t: row.quantity_t, price_inr_per_t: row.price_inr_per_t,
+    fee_rate: row.fee_rate, fee_inr: row.fee_inr, fee_status: row.fee_status,
     route: row.route, stage: row.stage, stages: orderStages(row.route), stages_done: row.stages_done,
     claim_text: row.claim_text, certificate_token: row.certificate_token,
     created_at: row.created_at.toISOString(), demo: true,
@@ -32,6 +34,13 @@ export async function advanceOrder(id: string) {
   return db.transaction(async tx => {
     const [row] = await tx.select().from(ordersTable).where(eq(ordersTable.id, id)).for("update");
     if (!row) return null;
+    if (isCancelledBeforeDelivery(row.stage, row.stages_done)) {
+      if (row.fee_status !== "cancelled") {
+        const [cancelled] = await tx.update(ordersTable).set({ fee_status: "cancelled" }).where(eq(ordersTable.id, id)).returning();
+        return cancelled;
+      }
+      return row;
+    }
     const stages = orderStages(row.route);
     const index = Math.min(stages.length - 1, Math.max(0, Math.floor((Date.now() - row.created_at.getTime()) / 3000)));
     const done = stages.slice(0, index + 1);
@@ -42,6 +51,7 @@ export async function advanceOrder(id: string) {
     if (row.stage !== stages[index] || (retired && !row.retired_logged)) {
       const [updated] = await tx.update(ordersTable).set({
         stage: stages[index], stages_done: done, retired_logged: retired || row.retired_logged,
+        fee_status: feeStatusForOrder(row.route, stages[index], done),
       }).where(eq(ordersTable.id, id)).returning();
       return updated;
     }

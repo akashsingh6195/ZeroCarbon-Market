@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSession } from '@/lib/session';
 import { errMsg, inr, num } from '@/lib/zc';
 import { cn } from '@/lib/utils';
+import { formatFeeRate, formatInr, pricing } from '@/lib/pricing';
 
 const STEPS = ['Tonnes and wording', 'Check wording', 'Demo payment'];
 
@@ -40,6 +41,9 @@ export default function Buy() {
   const t = Number(qty);
   const qtyOk = Number.isFinite(t) && t > 0 && t <= l.quantity_t;
   const total = qtyOk ? t * l.price_inr_per_t : 0;
+  const hasFee = l.market === 'voluntary' || l.market === 'authorised';
+  const feeRate = hasFee ? pricing.deal_fee.standard_rate : 0;
+  const fee = Math.round(total * feeRate);
   const finalClaim = result && useAllowed ? result.allowed_wording : claim;
 
   if (!session.org) {
@@ -117,6 +121,16 @@ export default function Buy() {
             <span className="text-sm text-muted-foreground">Demo total</span>
             <span className="text-2xl font-bold tabular-nums" data-testid="text-total">{inr(total)}</span>
           </div>
+          <section className="rounded-xl border bg-card p-4 text-sm" data-testid="section-buy-money">
+            <h2 className="mb-2 font-semibold">Money in this deal</h2>
+            <p>You pay: {formatInr(total)} ({qtyOk ? t : 0} t × {formatInr(l.price_inr_per_t)} a tonne)</p>
+            {hasFee ? <>
+              <p className="mt-1">ZeroCarbon fee: {formatFeeRate(feeRate)} ({formatInr(fee)}), paid by the seller from the sale, only once the credits are delivered</p>
+              <p className="mt-1 font-semibold">Seller receives: {formatInr(total - fee)}</p>
+              {total >= pricing.deal_fee.large_order_threshold_inr && <p className="mt-2 text-xs text-muted-foreground">Large or repeat orders can agree a lower fee ({formatFeeRate(pricing.deal_fee.large_repeat_min_rate)} to {formatFeeRate(pricing.deal_fee.large_repeat_max_rate)}) before the deal.</p>}
+            </> : <p className="mt-2 rounded-lg bg-secondary p-3 text-xs">{l.market === 'india_offset' ? "No ZeroCarbon fee. In real life, Indian offset credits trade only on India's power exchanges; exchange and registry fees are paid there at actual cost." : 'No ZeroCarbon fee.'}</p>}
+            <p className="mt-2 text-xs text-muted-foreground">Taxes are not shown in this demo.</p>
+          </section>
           {err && <p className="text-sm text-destructive" data-testid="text-buy-error">{err}</p>}
           <Button onClick={doCheck} disabled={check.isPending} className="h-12 w-full text-base font-semibold" data-testid="button-check-claim">{check.isPending ? 'Checking wording...' : 'Check my wording'}</Button>
         </div>
@@ -158,6 +172,12 @@ export default function Buy() {
               <div className="flex justify-between"><dt className="text-muted-foreground">Price</dt><dd>{inr(l.price_inr_per_t)} / t</dd></div>
               <div className="flex justify-between border-t border-dashed pt-2 text-base font-bold"><dt>Demo total</dt><dd>{inr(total)}</dd></div>
             </dl>
+            <section className="mt-4 rounded-xl border bg-background p-3 text-sm" data-testid="section-payment-fee-breakdown">
+              <h3 className="font-semibold">Money in this deal</h3>
+              <p className="mt-1">You pay: {formatInr(total)} ({num(t)} t × {formatInr(l.price_inr_per_t)} a tonne)</p>
+              {hasFee ? <><p className="mt-1">ZeroCarbon fee: {formatFeeRate(feeRate)} ({formatInr(fee)}), paid by the seller from the sale, only once the credits are delivered</p><p className="mt-1 font-semibold">Seller receives: {formatInr(total - fee)}</p>{total >= pricing.deal_fee.large_order_threshold_inr && <p className="mt-2 text-xs text-muted-foreground">Large or repeat orders can agree a lower fee ({formatFeeRate(pricing.deal_fee.large_repeat_min_rate)} to {formatFeeRate(pricing.deal_fee.large_repeat_max_rate)}) before the deal.</p>}</> : <p className="mt-2">{l.market === 'india_offset' ? "No ZeroCarbon fee. In real life, Indian offset credits trade only on India's power exchanges; exchange and registry fees are paid there at actual cost." : 'No ZeroCarbon fee.'}</p>}
+              <p className="mt-2 text-xs text-muted-foreground">Taxes are not shown in this demo.</p>
+            </section>
             <div className="mt-4 rounded-lg bg-secondary p-3 text-sm"><span className="text-xs text-muted-foreground">Your wording</span><p className="mt-0.5">{finalClaim}</p></div>
           </div>
           <NoMoneyNote />

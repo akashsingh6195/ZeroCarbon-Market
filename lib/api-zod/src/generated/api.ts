@@ -215,6 +215,9 @@ export const GetOrdersResponseItem = zod.object({
 }),
   "quantity_t": zod.number(),
   "price_inr_per_t": zod.number(),
+  "fee_rate": zod.number(),
+  "fee_inr": zod.number().int(),
+  "fee_status": zod.enum(['pending', 'earned', 'none', 'cancelled']),
   "route": zod.string(),
   "stage": zod.string(),
   "stages": zod.array(zod.string()),
@@ -265,6 +268,9 @@ export const CreateOrderResponse = zod.object({
 }),
   "quantity_t": zod.number(),
   "price_inr_per_t": zod.number(),
+  "fee_rate": zod.number(),
+  "fee_inr": zod.number().int(),
+  "fee_status": zod.enum(['pending', 'earned', 'none', 'cancelled']),
   "route": zod.string(),
   "stage": zod.string(),
   "stages": zod.array(zod.string()),
@@ -273,6 +279,16 @@ export const CreateOrderResponse = zod.object({
   "certificate_token": zod.string(),
   "created_at": zod.string(),
   "demo": zod.boolean()
+})
+
+
+export const RecordPlanInterestBody = zod.object({
+  "plan": zod.enum(['pool_starter', 'pool_essential', 'pool_growth', 'pool_enterprise', 'company_or_trader', 'due_diligence', 'comply_pro']),
+  "listing_id": zod.number().int().optional()
+})
+
+export const RecordPlanInterestResponse = zod.object({
+  "message": zod.string()
 })
 
 
@@ -305,6 +321,9 @@ export const GetOrderResponse = zod.object({
 }),
   "quantity_t": zod.number(),
   "price_inr_per_t": zod.number(),
+  "fee_rate": zod.number(),
+  "fee_inr": zod.number().int(),
+  "fee_status": zod.enum(['pending', 'earned', 'none', 'cancelled']),
   "route": zod.string(),
   "stage": zod.string(),
   "stages": zod.array(zod.string()),
@@ -405,6 +424,7 @@ export const GetLiveStatsResponse = zod.object({
   "tonnes_retired": zod.number(),
   "scans": zod.number().int(),
   "qr_visits": zod.number().int(),
+  "fees_earned_inr": zod.number().int(),
   "demo": zod.boolean()
 })
 
@@ -442,6 +462,7 @@ export const GetAdminDashboardResponse = zod.object({
   "tonnes_retired": zod.number(),
   "scans": zod.number().int(),
   "qr_visits": zod.number().int(),
+  "fees_earned_inr": zod.number().int(),
   "demo": zod.boolean()
 }),
   "listings": zod.array(zod.object({
@@ -503,6 +524,9 @@ export const GetAdminDashboardResponse = zod.object({
 }),
   "quantity_t": zod.number(),
   "price_inr_per_t": zod.number(),
+  "fee_rate": zod.number(),
+  "fee_inr": zod.number().int(),
+  "fee_status": zod.enum(['pending', 'earned', 'none', 'cancelled']),
   "route": zod.string(),
   "stage": zod.string(),
   "stages": zod.array(zod.string()),
@@ -512,7 +536,14 @@ export const GetAdminDashboardResponse = zod.object({
   "created_at": zod.string(),
   "demo": zod.boolean()
 })),
-  "integration_status": zod.string()
+  "integration_status": zod.string(),
+  "revenue": zod.object({
+  "fees_earned_inr": zod.number().int(),
+  "fees_pending_inr": zod.number().int(),
+  "completed_voluntary_orders": zod.number().int(),
+  "credit_value_traded_inr": zod.number(),
+  "plan_interest_counts": zod.record(zod.string(), zod.number().int())
+})
 })
 
 

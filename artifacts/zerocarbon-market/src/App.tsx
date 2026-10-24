@@ -19,6 +19,7 @@ import Ask from '@/pages/ask';
 import Comply from '@/pages/comply';
 import Live from '@/pages/live';
 import Admin from '@/pages/admin';
+import Pricing from '@/pages/pricing';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: false } } });
 
@@ -28,6 +29,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/market" component={Market} />
+        <Route path="/pricing" component={Pricing} />
         <Route path="/listings/:id" component={ListingPage} />
         <Route path="/signup" component={Signup} />
         <Route path="/buy/:id" component={Buy} />

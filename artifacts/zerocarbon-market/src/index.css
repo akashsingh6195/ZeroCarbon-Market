@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@500&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'leaflet/dist/leaflet.css';
@@ -118,7 +118,7 @@
   --paper: 47 41% 95%;
   --ink: 154 11% 13%;
 
-  --app-font-sans: 'Inter', 'Noto Sans Devanagari', 'Noto Sans Kannada', system-ui, sans-serif;
+  --app-font-sans: 'DM Sans', 'Noto Sans Devanagari', 'Noto Sans Kannada', system-ui, sans-serif;
   --app-font-serif: 'Fraunces', Georgia, serif;
   --app-font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --radius: 0.75rem;

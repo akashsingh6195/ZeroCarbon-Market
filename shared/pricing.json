@@ -1,0 +1,77 @@
+{
+  "checked_on": "2026-10-24",
+  "status": "Proposed launch prices",
+  "deal_fee": {
+    "standard_rate": 0.06,
+    "large_repeat_min_rate": 0.03,
+    "large_repeat_max_rate": 0.05,
+    "large_order_threshold_inr": 2500000
+  },
+  "packages": {
+    "landowner": {
+      "price_inr": 0,
+      "assisted_survey_inr": 499
+    },
+    "pool_starter": {
+      "pilot_days": 90,
+      "price_inr": 0
+    },
+    "pool_essential": {
+      "monthly_inr": 5000,
+      "annual_inr": 50000,
+      "max_plots": 500
+    },
+    "pool_growth": {
+      "monthly_inr": 12500,
+      "annual_inr": 125000,
+      "max_plots": 2500
+    },
+    "pool_enterprise": {
+      "annual_min_inr": 250000,
+      "annual_max_inr": 600000
+    },
+    "company_or_trader": {
+      "annual_min_inr": 75000,
+      "annual_max_inr": 300000
+    },
+    "comply_pro": {
+      "annual_inr": 60000
+    },
+    "comply_enterprise": {
+      "annual_min_inr": 150000,
+      "annual_max_inr": 300000
+    },
+    "desk_trader": {
+      "annual_inr": 75000
+    }
+  },
+  "services": {
+    "drone_field_survey_min_inr": 2000,
+    "drone_field_survey_max_inr": 5000,
+    "document_organising_min_inr": 2500,
+    "document_organising_max_inr": 7500,
+    "feasibility_pack_min_inr": 15000,
+    "feasibility_pack_max_inr": 40000,
+    "project_coordination_min_inr": 25000,
+    "project_coordination_max_inr": 75000,
+    "custom_integration_min_inr": 100000,
+    "custom_integration_max_inr": 500000,
+    "due_diligence_min_inr": 15000,
+    "due_diligence_max_inr": 40000,
+    "sourcing_help_min_inr": 50000,
+    "sourcing_help_max_inr": 150000,
+    "portfolio_report_min_inr": 25000,
+    "portfolio_report_max_inr": 75000,
+    "ledger_pro_min_annual_inr": 30000,
+    "ledger_pro_max_annual_inr": 75000,
+    "data_api_setup_min_inr": 100000,
+    "data_api_setup_max_inr": 500000
+  },
+  "official_fees": {
+    "set_by": "BEE",
+    "account_opening_inr": 5000,
+    "yearly_account_inr": 2000,
+    "project_registration_inr": [50000, 100000, 150000],
+    "issuance_per_credit_inr": 5
+  }
+}

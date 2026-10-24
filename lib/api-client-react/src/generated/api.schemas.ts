@@ -180,11 +180,24 @@ export interface OrderInput {
   demo_payment_approved: boolean;
 }
 
+export type OrderFeeStatus = typeof OrderFeeStatus[keyof typeof OrderFeeStatus];
+
+
+export const OrderFeeStatus = {
+  pending: 'pending',
+  earned: 'earned',
+  none: 'none',
+  cancelled: 'cancelled',
+} as const;
+
 export interface Order {
   id: string;
   listing: Listing;
   quantity_t: number;
   price_inr_per_t: number;
+  fee_rate: number;
+  fee_inr: number;
+  fee_status: OrderFeeStatus;
   route: string;
   stage: string;
   stages: string[];
@@ -257,12 +270,41 @@ export interface LiveStats {
   tonnes_retired: number;
   scans: number;
   qr_visits: number;
+  fees_earned_inr: number;
   demo: boolean;
+}
+
+export type AdminRevenuePlanInterestCounts = {[key: string]: number};
+
+export interface AdminRevenue {
+  fees_earned_inr: number;
+  fees_pending_inr: number;
+  completed_voluntary_orders: number;
+  credit_value_traded_inr: number;
+  plan_interest_counts: AdminRevenuePlanInterestCounts;
 }
 
 export interface VisitInput {
   /** @maxLength 100 */
   src?: string;
+}
+
+export type PlanInterestPlan = typeof PlanInterestPlan[keyof typeof PlanInterestPlan];
+
+
+export const PlanInterestPlan = {
+  pool_starter: 'pool_starter',
+  pool_essential: 'pool_essential',
+  pool_growth: 'pool_growth',
+  pool_enterprise: 'pool_enterprise',
+  company_or_trader: 'company_or_trader',
+  due_diligence: 'due_diligence',
+  comply_pro: 'comply_pro',
+} as const;
+
+export interface PlanInterest {
+  plan: PlanInterestPlan;
+  listing_id?: number;
 }
 
 export interface AdminCredentials {
@@ -293,6 +335,7 @@ export interface AdminDashboard {
   organisations: Organisation[];
   orders: Order[];
   integration_status: string;
+  revenue: AdminRevenue;
 }
 
 export type GetListingsParams = {

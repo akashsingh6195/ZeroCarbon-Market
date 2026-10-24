@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errMsg } from '@/lib/zc';
 import { cn } from '@/lib/utils';
+import { formatFeeRate, formatInr, checkedOnLabel, pricing } from '@/lib/pricing';
 
 export default function Scan() {
   const qc = useQueryClient();
@@ -87,7 +88,7 @@ export default function Scan() {
             ) : (
               <article className="overflow-hidden rounded-2xl border bg-card shadow-md rise" data-testid="card-scan-result">
                 <div className="bg-[hsl(var(--soil))] p-5 text-[hsl(var(--paper))]">
-                  <div className="flex items-center justify-between gap-2"><span className="text-xs uppercase tracking-widest opacity-80">Scan result</span><DemoChip className="bg-[hsl(var(--paper))]" /></div>
+                  <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-xs uppercase tracking-widest opacity-80">Scan result</span><div className="flex items-center gap-2"><DemoChip className="bg-[hsl(var(--paper))]" /><span className="rounded-full bg-[hsl(var(--leaf)/0.2)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--forest))]">Free. Always.</span></div></div>
                   <h2 className="mt-2 font-display text-2xl font-semibold leading-snug" data-testid="text-scan-headline">{res.headline}</h2>
                 </div>
                 <div className="space-y-4 p-5 text-sm">
@@ -106,6 +107,9 @@ export default function Scan() {
                       </div>
                     );
                   })}
+                  {res.money_line && <p className="rounded-xl border border-[hsl(var(--leaf)/0.4)] bg-[hsl(var(--leaf)/0.08)] p-3 text-xs leading-relaxed" data-testid="text-scan-fee-disclosure">ZeroCarbon charges nothing upfront. If the credits are later sold through ZeroCarbon Market, {formatFeeRate(pricing.deal_fee.standard_rate)} of the sale goes to ZeroCarbon and the rest to the project, shared under your agreement.</p>}
+                  {res.next_step?.toLowerCase().includes('first-year fee') && <p className="rounded-xl bg-secondary p-3 text-xs leading-relaxed" data-testid="text-scan-registry-fees">These are official registry fees at actual cost ({pricing.official_fees.set_by} schedule, checked {checkedOnLabel()}). Joining ZeroCarbon Pool is free, and the pool shares these fees across many farms.</p>}
+                  {!/(not eligible|not likely)/i.test(res.headline) && <p className="text-xs text-muted-foreground" data-testid="text-scan-survey-option">Want help with photos? Doing it yourself is free; an assisted survey is {formatInr(pricing.packages.landowner.assisted_survey_inr)}, often paid by your FPO.</p>}
                   {res.limitations && (
                     <div className="rounded-xl bg-secondary p-3"><div className="flex items-center gap-1.5 text-xs font-semibold"><EyeOff className="h-3.5 w-3.5" /> What satellites can't see</div><p className="mt-1 whitespace-pre-line">{res.limitations}</p></div>
                   )}

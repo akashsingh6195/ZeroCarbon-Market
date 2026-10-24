@@ -5,6 +5,7 @@
  * ZeroCarbon Market demo API
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminRevenue } from './adminRevenue';
 import type { Event } from './event';
 import type { Listing } from './listing';
 import type { LiveStats } from './liveStats';
@@ -18,4 +19,5 @@ export interface AdminDashboard {
   organisations: Organisation[];
   orders: Order[];
   integration_status: string;
+  revenue: AdminRevenue;
 }

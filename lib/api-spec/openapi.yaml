@@ -137,6 +137,20 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/Order"}
+  /plan-interest:
+    post:
+      operationId: recordPlanInterest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/PlanInterest"}
+      responses:
+        "200":
+          description: Interest recorded without a payment
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
   /orders/{id}:
     get:
       operationId: getOrder
@@ -405,12 +419,15 @@ components:
         demo_payment_approved: {type: boolean}
     Order:
       type: object
-      required: [id, listing, quantity_t, price_inr_per_t, route, stage, stages, stages_done, claim_text, certificate_token, created_at, demo]
+      required: [id, listing, quantity_t, price_inr_per_t, fee_rate, fee_inr, fee_status, route, stage, stages, stages_done, claim_text, certificate_token, created_at, demo]
       properties:
         id: {type: string}
         listing: {$ref: "#/components/schemas/Listing"}
         quantity_t: {type: number}
         price_inr_per_t: {type: number}
+        fee_rate: {type: number}
+        fee_inr: {type: integer}
+        fee_status: {type: string, enum: [pending, earned, none, cancelled]}
         route: {type: string}
         stage: {type: string}
         stages:
@@ -478,18 +495,36 @@ components:
         limitations: {type: string}
     LiveStats:
       type: object
-      required: [signups, orders, tonnes_retired, scans, qr_visits, demo]
+      required: [signups, orders, tonnes_retired, scans, qr_visits, fees_earned_inr, demo]
       properties:
         signups: {type: integer}
         orders: {type: integer}
         tonnes_retired: {type: number}
         scans: {type: integer}
         qr_visits: {type: integer}
+        fees_earned_inr: {type: integer}
         demo: {type: boolean}
+    AdminRevenue:
+      type: object
+      required: [fees_earned_inr, fees_pending_inr, completed_voluntary_orders, credit_value_traded_inr, plan_interest_counts]
+      properties:
+        fees_earned_inr: {type: integer}
+        fees_pending_inr: {type: integer}
+        completed_voluntary_orders: {type: integer}
+        credit_value_traded_inr: {type: number}
+        plan_interest_counts:
+          type: object
+          additionalProperties: {type: integer}
     VisitInput:
       type: object
       properties:
         src: {type: string, maxLength: 100}
+    PlanInterest:
+      type: object
+      required: [plan]
+      properties:
+        plan: {type: string, enum: [pool_starter, pool_essential, pool_growth, pool_enterprise, company_or_trader, due_diligence, comply_pro]}
+        listing_id: {type: integer}
     AdminCredentials:
       type: object
       required: [pin]
@@ -510,7 +545,7 @@ components:
         payload: {type: object, additionalProperties: true}
     AdminDashboard:
       type: object
-      required: [stats, listings, events, organisations, orders, integration_status]
+      required: [stats, listings, events, organisations, orders, integration_status, revenue]
       properties:
         stats: {$ref: "#/components/schemas/LiveStats"}
         listings:
@@ -526,3 +561,4 @@ components:
           type: array
           items: {$ref: "#/components/schemas/Order"}
         integration_status: {type: string}
+        revenue: {$ref: "#/components/schemas/AdminRevenue"}

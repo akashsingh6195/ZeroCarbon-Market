@@ -8,6 +8,8 @@
 
 export * from './adminCredentials';
 export * from './adminDashboard';
+export * from './adminRevenue';
+export * from './adminRevenuePlanInterestCounts';
 export * from './answer';
 export * from './certificate';
 export * from './claimInput';
@@ -28,12 +30,15 @@ export * from './needInput';
 export * from './needResult';
 export * from './needResultFilters';
 export * from './order';
+export * from './orderFeeStatus';
 export * from './orderInput';
 export * from './organisation';
 export * from './organisationInput';
 export * from './organisationInputBuyerType';
 export * from './organisationInputRolesItem';
 export * from './organisationInputSellerType';
+export * from './planInterest';
+export * from './planInterestPlan';
 export * from './questionInput';
 export * from './rankedListing';
 export * from './scanInput';

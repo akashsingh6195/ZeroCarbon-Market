@@ -12,6 +12,7 @@ import { agenticorg, guard, blockedPhrases } from "../lib/agenticorg";
 import { advanceOrder, publicOrder, certificateFor, writeCertificate } from "../lib/order-service";
 import { event } from "../lib/events";
 import { logger } from "../lib/logger";
+import { feeAmountInr, feeRateForRoute, feeStatusForOrder } from "../lib/pricing";
 
 const router = Router();
 router.post("/claim-check", async (req, res) => {
@@ -60,6 +61,9 @@ router.post("/orders", async (req, res) => {
     const [order] = await tx.insert(ordersTable).values({
       id: randomUUID(), org_id: org.id, listing_id: listing.id, listing_snapshot: { ...listing },
       quantity_t: data.quantity_t, price_inr_per_t: listing.price_inr_per_t, route: listing.market,
+      fee_rate: feeRateForRoute(listing.market),
+      fee_inr: feeAmountInr(data.quantity_t, listing.price_inr_per_t, feeRateForRoute(listing.market)),
+      fee_status: feeStatusForOrder(listing.market, "Order placed", ["Order placed"]),
       stage: "Order placed", stages_done: ["Order placed"],
       // User text is not promoted into a certificate claim without a trusted factual check.
       claim_text: defaultClaim(listing, data.quantity_t),

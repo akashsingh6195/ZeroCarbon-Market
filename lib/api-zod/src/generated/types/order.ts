@@ -6,12 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Listing } from './listing';
+import type { OrderFeeStatus } from './orderFeeStatus';
 
 export interface Order {
   id: string;
   listing: Listing;
   quantity_t: number;
   price_inr_per_t: number;
+  fee_rate: number;
+  fee_inr: number;
+  fee_status: OrderFeeStatus;
   route: string;
   stage: string;
   stages: string[];

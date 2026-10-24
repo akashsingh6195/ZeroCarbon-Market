@@ -11,6 +11,25 @@ import { publicOrder } from "../lib/order-service";
 import { integrationStatus } from "../lib/agenticorg";
 
 const router = Router();
+async function revenue() {
+  const [totals] = await db.select({
+    fees_earned_inr: sql<number>`coalesce(sum(${ordersTable.fee_inr}) filter (where ${ordersTable.fee_status} = 'earned'), 0)::int`,
+    fees_pending_inr: sql<number>`coalesce(sum(${ordersTable.fee_inr}) filter (where ${ordersTable.fee_status} = 'pending'), 0)::int`,
+    completed_voluntary_orders: sql<number>`count(*) filter (where ${ordersTable.fee_status} = 'earned' and ${ordersTable.route} in ('voluntary','authorised'))::int`,
+    credit_value_traded_inr: sql<number>`coalesce(sum(${ordersTable.quantity_t} * ${ordersTable.price_inr_per_t}) filter (where ${ordersTable.fee_status} = 'earned' and ${ordersTable.route} in ('voluntary','authorised')), 0)::float8`,
+  }).from(ordersTable);
+  const plans = await db.select({
+    plan: sql<string>`${eventsTable.payload}->>'plan'`,
+    count: sql<number>`count(*)::int`,
+  }).from(eventsTable)
+    .where(eq(eventsTable.kind, "plan_interest"))
+    .groupBy(sql`${eventsTable.payload}->>'plan'`);
+  return {
+    ...totals,
+    plan_interest_counts: Object.fromEntries(plans.filter(row => row.plan).map(row => [row.plan, Number(row.count)])),
+  };
+}
+
 async function stats() {
   const [row] = await db.select({
     signups: sql<number>`count(*) filter (where kind = 'signup')::int`,
@@ -19,7 +38,10 @@ async function stats() {
     scans: sql<number>`count(*) filter (where kind = 'scan')::int`,
     qr_visits: sql<number>`count(*) filter (where kind = 'visit' and payload->>'src' = 'qr')::int`,
   }).from(eventsTable);
-  return { ...row, demo: true };
+  const [fees] = await db.select({
+    fees_earned_inr: sql<number>`coalesce(sum(${ordersTable.fee_inr}) filter (where ${ordersTable.fee_status} = 'earned'), 0)::int`,
+  }).from(ordersTable);
+  return { ...row, ...fees, demo: true };
 }
 router.get("/live", async (_req, res) => {
   res.set("Cache-Control", "no-store").json(GetLiveStatsResponse.parse(await stats()));
@@ -49,16 +71,18 @@ router.post("/admin/login", async (req, res) => {
   res.json({ message: "Admin access granted." });
 });
 router.get("/admin", requireAdmin, async (_req, res) => {
-  const [live, listings, events, orgs, orders] = await Promise.all([
+  const [live, listings, events, orgs, orders, revenueStats] = await Promise.all([
     stats(), db.select().from(listingsTable).orderBy(listingsTable.id),
     db.select().from(eventsTable).orderBy(desc(eventsTable.created_at)).limit(500),
     db.select().from(organisationsTable).orderBy(desc(organisationsTable.created_at)).limit(500),
     db.select().from(ordersTable).orderBy(desc(ordersTable.created_at)).limit(500),
+    revenue(),
   ]);
   res.set("Cache-Control", "no-store").json(GetAdminDashboardResponse.parse({
     stats: live, listings,
     events: events.map(e => ({ id: e.id, kind: e.kind, payload: e.payload, created_at: e.created_at.toISOString() })),
     organisations: orgs.map(publicOrganisation), orders: orders.map(publicOrder), integration_status: integrationStatus(),
+    revenue: revenueStats,
   }));
 });
 router.patch("/admin/listings/:id", requireAdmin, async (req, res) => {

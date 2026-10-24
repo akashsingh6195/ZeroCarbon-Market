@@ -4,6 +4,7 @@ import { DemoChip } from '@/components/zc/demo-chip';
 import { ErrorState } from '@/components/zc/states';
 import { Skeleton } from '@/components/ui/skeleton';
 import { num } from '@/lib/zc';
+import { formatInr } from '@/lib/pricing';
 
 export default function Live() {
   const q = useGetLiveStats({ query: { queryKey: getGetLiveStatsQueryKey(), refetchInterval: 5000 } });
@@ -14,19 +15,21 @@ export default function Live() {
     { k: 'Tonnes retired', v: q.data.tonnes_retired, c: 'var(--leaf)' },
     { k: 'Land scans', v: q.data.scans, c: 'var(--soil)' },
     { k: 'QR visits', v: q.data.qr_visits, c: 'var(--marigold)' },
+    { k: 'ZeroCarbon fees earned', v: q.data.fees_earned_inr, c: 'var(--forest)', money: true },
   ] : [];
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[hsl(var(--paper))] p-5 md:p-10">
       <div className="flex flex-wrap items-center justify-between gap-3"><Logo /><div className="flex items-center gap-3"><span className="flex items-center gap-2 text-sm font-medium"><span className="pulse-dot h-2.5 w-2.5 rounded-full bg-[hsl(var(--leaf))]" />Live</span><DemoChip size="lg" /></div></div>
       <div className="flex flex-1 flex-col justify-center py-8">
-        {q.isLoading ? <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-40" />)}</div>
+        {q.isLoading ? <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">{[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-40" />)}</div>
           : q.isError ? <ErrorState message="Live counters are unavailable." onRetry={() => q.refetch()} /> : (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             {tiles.map((t, i) => (
               <div key={t.k} className={`rounded-3xl border bg-card p-5 md:p-8 ${i === 4 ? 'col-span-2 lg:col-span-1' : ''}`} data-testid={`stat-${t.k.toLowerCase().replace(/\s/g, '-')}`}>
                 <div className="h-1.5 w-10 rounded-full" style={{ background: `hsl(${t.c})` }} />
-                <div key={t.v} className="rise mt-4 text-5xl font-extrabold tabular-nums tracking-tight md:text-7xl">{num(t.v)}</div>
+                <div key={t.v} className="rise mt-4 text-5xl font-extrabold tabular-nums tracking-tight md:text-7xl">{'money' in t && t.money ? formatInr(Number(t.v)) : num(t.v)}</div>
                 <div className="mt-2 text-sm font-medium text-muted-foreground md:text-lg">{t.k}</div>
+                {t.k === 'ZeroCarbon fees earned' && <div className="mt-2"><DemoChip /></div>}
               </div>
             ))}
           </div>

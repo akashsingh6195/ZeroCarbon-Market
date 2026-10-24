@@ -9,8 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { errMsg, fmtDate, inr, num } from '@/lib/zc';
 import { cn } from '@/lib/utils';
+import { OrderMoney } from '@/components/zc/order-money';
+import { useSession } from '@/lib/session';
+import { formatFeeRate } from '@/lib/pricing';
 
 export default function OrderPage() {
+  const session = useSession();
   const { id = '' } = useParams<{ id: string }>();
   const q = useGetOrder(id, {
     query: {
@@ -55,6 +59,8 @@ export default function OrderPage() {
               <h1 className="mt-1 font-display text-2xl font-semibold md:text-3xl">{o.listing.project_name}</h1>
               <p className="text-sm text-muted-foreground">{num(o.quantity_t)} t at {inr(o.price_inr_per_t)} / t · demo total {inr(o.quantity_t * o.price_inr_per_t)} · {o.route} route · {fmtDate(o.created_at)}</p>
             </div>
+            <OrderMoney order={o} />
+            {session.org?.id && session.org.id === o.listing.seller_org_id && o.fee_rate > 0 && <p className="rounded-xl border border-[hsl(var(--leaf)/0.4)] bg-[hsl(var(--leaf)/0.08)] p-3 text-sm" data-testid="text-order-seller-disclosure">Listing is free. When a deal completes, ZeroCarbon keeps {formatFeeRate(o.fee_rate)} and you receive the rest.</p>}
 
             <ol className="relative rounded-2xl border bg-card p-5" data-testid="list-stages">
               {o.stages.map((s, i) => {
