@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "ZeroCarbon Market"
+description = "A mobile-first demo marketplace for Indian carbon credits, land scans, transparent claims and shareable certificates."
+version = "1.0.0"
+id = "artifacts/zerocarbon-market"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19579
+
+[services.development]
+run = "pnpm --filter @workspace/zerocarbon-market run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/zerocarbon-market", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/zerocarbon-market/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19579"
+BASE_PATH = "/"

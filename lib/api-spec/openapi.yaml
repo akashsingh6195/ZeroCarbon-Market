@@ -1,36 +1,528 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ZeroCarbon Market demo API
 servers:
   - url: /api
-    description: Base API path
-tags:
-  - name: health
-    description: Health operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
-      tags: [health]
-      summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
           content:
             application/json:
+              schema: {$ref: "#/components/schemas/HealthStatus"}
+  /session:
+    get:
+      operationId: getSession
+      responses:
+        "200":
+          description: Current demo session
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Session"}
+    delete:
+      operationId: logout
+      responses:
+        "200":
+          description: Signed out
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /signup:
+    post:
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/OrganisationInput"}
+      responses:
+        "200":
+          description: Demo organisation created
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Session"}
+  /listings:
+    get:
+      operationId: getListings
+      parameters:
+        - {name: market, in: query, schema: {type: string}}
+        - {name: action, in: query, schema: {type: string}}
+        - {name: status, in: query, schema: {type: string}}
+        - {name: vintage_from, in: query, schema: {type: integer}}
+        - {name: max_price, in: query, schema: {type: number}}
+        - {name: region, in: query, schema: {type: string}}
+        - {name: search, in: query, schema: {type: string}}
+      responses:
+        "200":
+          description: Role-filtered visible demo listings
+          content:
+            application/json:
               schema:
-                $ref: "#/components/schemas/HealthStatus"
+                type: array
+                items: {$ref: "#/components/schemas/Listing"}
+  /listings/{id}:
+    get:
+      operationId: getListing
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        "200":
+          description: Listing details
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Listing"}
+  /market-summary:
+    get:
+      operationId: getMarketSummary
+      responses:
+        "200":
+          description: Role-filtered marketplace totals
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/MarketSummary"}
+  /need:
+    post:
+      operationId: interpretNeed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/NeedInput"}
+      responses:
+        "200":
+          description: Assistant results or explicit unavailability
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/NeedResult"}
+  /claim-check:
+    post:
+      operationId: checkClaim
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ClaimInput"}
+      responses:
+        "200":
+          description: Safe wording
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ClaimResult"}
+  /orders:
+    get:
+      operationId: getOrders
+      responses:
+        "200":
+          description: Organisation orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Order"}
+    post:
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/OrderInput"}
+      responses:
+        "201":
+          description: Demo order placed without any money movement
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Order"}
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Order and current demo stages
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Order"}
+  /orders/{id}/question:
+    post:
+      operationId: askOrder
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/QuestionInput"}
+      responses:
+        "200":
+          description: Concierge answer
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Answer"}
+  /certificates/{token}:
+    get:
+      operationId: getCertificate
+      parameters:
+        - {name: token, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Public demo certificate
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Certificate"}
+  /scan:
+    post:
+      operationId: scanLand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ScanInput"}
+      responses:
+        "200":
+          description: Scan result or explicit model-service failure
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ScanResult"}
+  /ask:
+    post:
+      operationId: askZeroCarbon
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/QuestionInput"}
+      responses:
+        "200":
+          description: Answer or explicit unavailability
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Answer"}
+  /live:
+    get:
+      operationId: getLiveStats
+      responses:
+        "200":
+          description: Demo event counters
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/LiveStats"}
+  /visits:
+    post:
+      operationId: recordVisit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/VisitInput"}
+      responses:
+        "200":
+          description: Visit recorded
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /admin/login:
+    post:
+      operationId: adminLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/AdminCredentials"}
+      responses:
+        "200":
+          description: PIN accepted
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Message"}
+  /admin:
+    get:
+      operationId: getAdminDashboard
+      responses:
+        "200":
+          description: PIN-protected admin dashboard
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/AdminDashboard"}
+  /admin/listings/{id}:
+    patch:
+      operationId: updateListingVisibility
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ListingVisibility"}
+      responses:
+        "200":
+          description: Visibility updated
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/Listing"}
+  /internal/listings:
+    get:
+      operationId: getInternalListings
+      parameters:
+        - {name: X-Internal-Key, in: header, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Key-protected visible listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: "#/components/schemas/Listing"}
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: {type: string}
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: {type: string}
+    OrganisationInput:
+      type: object
+      required: [name, phone, organisation_name, roles]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        phone: {type: string, minLength: 10, maxLength: 16}
+        organisation_name: {type: string, minLength: 1, maxLength: 160}
+        roles:
+          type: array
+          minItems: 1
+          items: {type: string, enum: [Buyer, Seller, Trader]}
+        buyer_type: {type: string, enum: [voluntary, obligated]}
+        seller_type: {type: string, enum: [land, project, credits]}
+    Organisation:
+      type: object
+      required: [id, name, organisation_name, roles, buyer_type]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        organisation_name: {type: string}
+        roles:
+          type: array
+          items: {type: string}
+        buyer_type: {type: string}
+    Session:
+      type: object
+      required: [organisation, next_screen]
+      properties:
+        organisation:
+          oneOf:
+            - {$ref: "#/components/schemas/Organisation"}
+            - {type: "null"}
+        next_screen: {type: string}
+    Listing:
+      type: object
+      required: [id, project_name, region, market, action, status, vintage, registry, method, price_inr_per_t, quantity_t, delivery_year, zerocarbon_score, lat, lon, description, hidden, demo]
+      properties:
+        id: {type: integer}
+        project_name: {type: string}
+        region: {type: string}
+        market: {type: string, enum: [india_compliance, india_offset, voluntary, authorised]}
+        action: {type: string, enum: [removal, reduction, avoidance]}
+        status: {type: string, enum: [future, issued, retired]}
+        vintage: {type: integer}
+        registry: {type: string}
+        method: {type: string}
+        price_inr_per_t: {type: number}
+        quantity_t: {type: number}
+        delivery_year: {type: [integer, "null"]}
+        zerocarbon_score: {type: integer}
+        seller_org_id: {type: [string, "null"]}
+        lat: {type: number}
+        lon: {type: number}
+        description: {type: string}
+        hidden: {type: boolean}
+        demo: {type: boolean}
+    MarketSummary:
+      type: object
+      required: [listings, available_tonnes, regions, min_price, max_price]
+      properties:
+        listings: {type: integer}
+        available_tonnes: {type: number}
+        regions: {type: integer}
+        min_price: {type: number}
+        max_price: {type: number}
+    NeedInput:
+      type: object
+      required: [sentence]
+      properties:
+        sentence: {type: string, minLength: 1, maxLength: 1000}
+    NeedResult:
+      type: object
+      required: [available, message, understood, filters, ranked]
+      properties:
+        available: {type: boolean}
+        message: {type: string}
+        understood: {type: string}
+        filters:
+          type: object
+          additionalProperties: true
+        ranked:
+          type: array
+          items: {$ref: "#/components/schemas/RankedListing"}
+    RankedListing:
+      type: object
+      required: [listing, why]
+      properties:
+        listing: {$ref: "#/components/schemas/Listing"}
+        why: {type: string}
+    ClaimInput:
+      type: object
+      required: [listing_id, quantity_t, claim_text]
+      properties:
+        listing_id: {type: integer}
+        quantity_t: {type: number, exclusiveMinimum: 0}
+        claim_text: {type: string, maxLength: 2000}
+    ClaimResult:
+      type: object
+      required: [allowed_wording, flagged_phrases, fallback]
+      properties:
+        allowed_wording: {type: string}
+        flagged_phrases:
+          type: array
+          items: {type: string}
+        fallback: {type: boolean}
+    OrderInput:
+      type: object
+      required: [listing_id, quantity_t, claim_text, demo_payment_approved]
+      properties:
+        listing_id: {type: integer}
+        quantity_t: {type: number, exclusiveMinimum: 0}
+        claim_text: {type: string, maxLength: 2000}
+        demo_payment_approved: {type: boolean}
+    Order:
+      type: object
+      required: [id, listing, quantity_t, price_inr_per_t, route, stage, stages, stages_done, claim_text, certificate_token, created_at, demo]
+      properties:
+        id: {type: string}
+        listing: {$ref: "#/components/schemas/Listing"}
+        quantity_t: {type: number}
+        price_inr_per_t: {type: number}
+        route: {type: string}
+        stage: {type: string}
+        stages:
+          type: array
+          items: {type: string}
+        stages_done:
+          type: array
+          items: {type: string}
+        claim_text: {type: string}
+        certificate_token: {type: string}
+        created_at: {type: string}
+        demo: {type: boolean}
+    Certificate:
+      type: object
+      required: [token, project_name, tonnes, vintage, text, serial_numbers, issued_at, demo]
+      properties:
+        token: {type: string}
+        project_name: {type: string}
+        tonnes: {type: number}
+        vintage: {type: integer}
+        text: {type: string}
+        serial_numbers:
+          type: array
+          items: {type: string}
+        issued_at: {type: string}
+        demo: {type: boolean}
+    QuestionInput:
+      type: object
+      required: [question]
+      properties:
+        question: {type: string, minLength: 1, maxLength: 2000}
+        screen: {type: string}
+        role: {type: string}
+    Answer:
+      type: object
+      required: [answer, see_screen, escalate, available]
+      properties:
+        answer: {type: string}
+        see_screen: {type: string}
+        escalate: {type: boolean}
+        available: {type: boolean}
+    ScanInput:
+      type: object
+      required: [lat, lon]
+      properties:
+        lat: {type: number, minimum: -90, maximum: 90}
+        lon: {type: number, minimum: -180, maximum: 180}
+        boundary_geojson:
+          type: object
+          additionalProperties: true
+    ScanResult:
+      type: object
+      required: [available, message]
+      properties:
+        available: {type: boolean}
+        message: {type: string}
+        headline: {type: string}
+        reasons:
+          type: array
+          items: {type: string}
+        what_to_plant: {type: string}
+        credits_line: {type: string}
+        money_line: {type: string}
+        next_step: {type: string}
+        limitations: {type: string}
+    LiveStats:
+      type: object
+      required: [signups, orders, tonnes_retired, scans, qr_visits, demo]
+      properties:
+        signups: {type: integer}
+        orders: {type: integer}
+        tonnes_retired: {type: number}
+        scans: {type: integer}
+        qr_visits: {type: integer}
+        demo: {type: boolean}
+    VisitInput:
+      type: object
+      properties:
+        src: {type: string, maxLength: 100}
+    AdminCredentials:
+      type: object
+      required: [pin]
+      properties:
+        pin: {type: string, minLength: 1, maxLength: 128}
+    ListingVisibility:
+      type: object
+      required: [hidden]
+      properties:
+        hidden: {type: boolean}
+    Event:
+      type: object
+      required: [id, kind, created_at, payload]
+      properties:
+        id: {type: integer}
+        kind: {type: string}
+        created_at: {type: string}
+        payload: {type: object, additionalProperties: true}
+    AdminDashboard:
+      type: object
+      required: [stats, listings, events, organisations, orders, integration_status]
+      properties:
+        stats: {$ref: "#/components/schemas/LiveStats"}
+        listings:
+          type: array
+          items: {$ref: "#/components/schemas/Listing"}
+        events:
+          type: array
+          items: {$ref: "#/components/schemas/Event"}
+        organisations:
+          type: array
+          items: {$ref: "#/components/schemas/Organisation"}
+        orders:
+          type: array
+          items: {$ref: "#/components/schemas/Order"}
+        integration_status: {type: string}

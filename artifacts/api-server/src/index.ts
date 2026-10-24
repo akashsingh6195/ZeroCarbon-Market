@@ -1,5 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { seedListings } from "./lib/seed";
+import { startOrderTicker } from "./lib/order-service";
 
 const rawPort = process.env["PORT"];
 
@@ -15,6 +17,9 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
+async function start() {
+await seedListings();
+startOrderTicker();
 app.listen(port, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
@@ -23,3 +28,5 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
 });
+}
+start().catch(err => { logger.error({ err }, "API startup failed"); process.exit(1); });

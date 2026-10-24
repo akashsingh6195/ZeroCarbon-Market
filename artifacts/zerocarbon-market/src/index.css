@@ -1,0 +1,320 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Kannada:wght@400;600&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'leaflet/dist/leaflet.css';
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover-border: hsl(var(--popover-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-border: var(--primary-border);
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary-border: var(--secondary-border);
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted-border: var(--muted-border);
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-border: var(--accent-border);
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive-border: var(--destructive-border);
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-primary-border: var(--sidebar-primary-border);
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-accent-border: var(--sidebar-accent-border);
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --font-sans: var(--app-font-sans);
+  --font-serif: var(--app-font-serif);
+  --font-mono: var(--app-font-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* LIGHT MODE */
+:root {
+  --button-outline: rgba(29, 36, 33, 0.12);
+  --badge-outline: rgba(29, 36, 33, 0.08);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(29, 36, 33, 0.04);
+  --elevate-2: rgba(29, 36, 33, 0.09);
+  --background: 47 41% 95%;
+  --foreground: 154 11% 13%;
+  --border: 45 18% 83%;
+  --card: 48 45% 98%;
+  --card-foreground: 154 11% 13%;
+  --card-border: 45 18% 85%;
+  --sidebar: 47 35% 92%;
+  --sidebar-foreground: 154 11% 13%;
+  --sidebar-border: 45 18% 83%;
+  --sidebar-primary: 147 50% 24%;
+  --sidebar-primary-foreground: 47 41% 96%;
+  --sidebar-accent: 100 30% 88%;
+  --sidebar-accent-foreground: 147 50% 20%;
+  --sidebar-ring: 147 50% 24%;
+  --popover: 48 45% 98%;
+  --popover-foreground: 154 11% 13%;
+  --popover-border: 45 18% 83%;
+  --primary: 147 50% 24%;
+  --primary-foreground: 47 41% 96%;
+  --secondary: 46 30% 89%;
+  --secondary-foreground: 154 11% 13%;
+  --muted: 46 28% 90%;
+  --muted-foreground: 150 6% 36%;
+  --accent: 36 80% 57%;
+  --accent-foreground: 154 11% 13%;
+  --destructive: 6 62% 44%;
+  --destructive-foreground: 47 41% 96%;
+  --input: 45 16% 78%;
+  --ring: 147 50% 30%;
+  --chart-1: 147 50% 24%;
+  --chart-2: 100 37% 50%;
+  --chart-3: 36 80% 57%;
+  --chart-4: 218 45% 34%;
+  --chart-5: 30 36% 35%;
+
+  --forest: 147 50% 24%;
+  --leaf: 100 37% 50%;
+  --marigold: 36 80% 57%;
+  --registry: 218 45% 34%;
+  --soil: 30 36% 35%;
+  --paper: 47 41% 95%;
+  --ink: 154 11% 13%;
+
+  --app-font-sans: 'Inter', 'Noto Sans Devanagari', 'Noto Sans Kannada', system-ui, sans-serif;
+  --app-font-serif: 'Fraunces', Georgia, serif;
+  --app-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --radius: 0.75rem;
+  --shadow-2xs: 0 1px 0 0 hsl(154 11% 13% / 0.04);
+  --shadow-xs: 0 1px 2px 0 hsl(154 11% 13% / 0.05);
+  --shadow-sm: 0 1px 2px 0 hsl(154 11% 13% / 0.06), 0 1px 3px -1px hsl(154 11% 13% / 0.06);
+  --shadow: 0 2px 6px -2px hsl(154 20% 13% / 0.1);
+  --shadow-md: 0 6px 16px -6px hsl(154 20% 13% / 0.14);
+  --shadow-lg: 0 14px 30px -12px hsl(154 30% 13% / 0.18);
+  --shadow-xl: 0 24px 50px -20px hsl(154 30% 13% / 0.22);
+  --shadow-2xl: 0 30px 60px -24px hsl(154 30% 13% / 0.28);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --primary-border: hsl(147 50% 20%);
+  --secondary-border: hsl(46 25% 82%);
+  --muted-border: hsl(46 25% 84%);
+  --accent-border: hsl(36 70% 48%);
+  --destructive-border: hsl(6 62% 38%);
+}
+
+.dark {
+  --background: 154 11% 10%;
+  --foreground: 47 41% 95%;
+  --border: 154 8% 22%;
+  --card: 154 11% 13%;
+  --card-foreground: 47 41% 95%;
+  --card-border: 154 8% 22%;
+  --sidebar: 154 11% 12%;
+  --sidebar-foreground: 47 41% 95%;
+  --sidebar-border: 154 8% 22%;
+  --sidebar-primary: 100 37% 50%;
+  --sidebar-primary-foreground: 154 11% 10%;
+  --sidebar-accent: 154 10% 18%;
+  --sidebar-accent-foreground: 47 41% 95%;
+  --sidebar-ring: 100 37% 50%;
+  --popover: 154 11% 13%;
+  --popover-foreground: 47 41% 95%;
+  --popover-border: 154 8% 22%;
+  --primary: 100 37% 50%;
+  --primary-foreground: 154 11% 10%;
+  --secondary: 154 10% 18%;
+  --secondary-foreground: 47 41% 95%;
+  --muted: 154 10% 18%;
+  --muted-foreground: 47 10% 70%;
+  --accent: 36 80% 57%;
+  --accent-foreground: 154 11% 10%;
+  --destructive: 6 62% 50%;
+  --destructive-foreground: 47 41% 96%;
+  --input: 154 8% 28%;
+  --ring: 100 37% 50%;
+  --chart-1: 100 37% 50%;
+  --chart-2: 36 80% 57%;
+  --chart-3: 218 45% 55%;
+  --chart-4: 30 36% 55%;
+  --chart-5: 147 50% 40%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/**
+ * Using the elevate system.
+ * Automatic contrast adjustment.
+ *
+ * <element className="hover-elevate" />
+ * <element className="active-elevate-2" />
+ *
+ * // Using the tailwind utility when a data attribute is "on"
+ * <element className="toggle-elevate data-[state=on]:toggle-elevated" />
+ * // Or manually controlling the toggle state
+ * <element className="toggle-elevate toggle-elevated" />
+ *
+ * Elevation systems have to handle many states.
+ * - not-hovered, vs. hovered vs. active  (three mutually exclusive states)
+ * - toggled or not
+ * - focused or not (this is not handled with these utilities)
+ *
+ * Even without handling focused or not, this is six possible combinations that
+ * need to be distinguished from eachother visually.
+ */
+@layer utilities {
+  /* Hide ugly search cancel button in Chrome until we can style it properly */
+  input[type='search']::-webkit-search-cancel-button {
+    @apply hidden;
+  }
+
+  /* Placeholder styling for contentEditable div */
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+  }
+
+  /* .no-default-hover-elevate/no-default-active-elevate is an escape hatch so consumers of
+   * buttons/badges can remove the automatic brightness adjustment on interactions
+   * and program their own. */
+  .no-default-hover-elevate {
+  }
+
+  .no-default-active-elevate {
+  }
+
+  /**
+   * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
+   * This way they can stack/compound. Both will overlap the parent's borders!
+   * So borders will be automatically adjusted both on toggle, and hover/active,
+   * and they will be compounded.
+   */
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    /*border-radius: inherit;   match rounded corners */
+    border-radius: inherit;
+    z-index: -1;
+    /* sits behind content but above backdrop */
+  }
+
+  .toggle-elevate.toggle-elevated::before {
+    background-color: var(--elevate-2);
+  }
+
+  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
+  .border.toggle-elevate::before {
+    inset: -1px;
+  }
+
+  /* Does not work on elements with overflow:hidden! */
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    /*border-radius: inherit;   match rounded corners */
+    border-radius: inherit;
+    z-index: 999;
+    /* sits in front of content */
+  }
+
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-1);
+  }
+
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-2);
+  }
+
+  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
+    inset: -1px;
+  }
+}
+
+html, body { overflow-x: hidden; max-width: 100%; }
+body { background: hsl(var(--paper)); }
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: .35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.38 0 0 0 0 0.25 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.font-display { font-family: var(--app-font-serif); letter-spacing: -0.02em; }
+.font-mono { font-family: var(--app-font-mono); }
+.ledger-rule { background-image: repeating-linear-gradient(to bottom, transparent 0 27px, hsl(var(--border)) 27px 28px); }
+.tap { min-height: 44px; min-width: 44px; }
+.stamp { border: 1.5px dashed currentColor; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }
+.rise-1 { animation-delay: .08s } .rise-2 { animation-delay: .16s } .rise-3 { animation-delay: .24s } .rise-4 { animation-delay: .32s }
+@keyframes pulse-dot { 0%,100% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.6); opacity: .4 } }
+.pulse-dot { animation: pulse-dot 1.4s ease-in-out infinite; }
+.leaflet-container { font-family: var(--app-font-sans); z-index: 0; }
+.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { scrollbar-width: none; }

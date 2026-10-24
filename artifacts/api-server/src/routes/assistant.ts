@@ -1,0 +1,111 @@
+import { Router } from "express";
+import { AskZeroCarbonBody, AskZeroCarbonResponse, ScanLandBody, ScanLandResponse } from "@workspace/api-zod";
+import { organisation } from "../lib/session";
+import { agenticorg, guard, blockedPhrases, validateContract } from "../lib/agenticorg";
+import { event } from "../lib/events";
+
+const router = Router();
+const safeScreens = new Set(["/", "/market", "/scan", "/orders", "/ask", "/signup", "/comply"]);
+router.post("/ask", async (req, res) => {
+  const input = AskZeroCarbonBody.safeParse(req.body);
+  if (!input.success) { res.status(400).json({ error: "Ask a question in up to 2,000 characters." }); return; }
+  const org = await organisation(req), data = input.data;
+  if (blockedPhrases(data.question).length) {
+    res.json(AskZeroCarbonResponse.parse({
+      answer: "I can explain credit labels, purchase steps and land checks, but cannot give financial advice or support unsupported environmental claims. Would you like to understand the different credit types?",
+      see_screen: "/market", available: true, escalate: false,
+    })); return;
+  }
+  try {
+    const result = await agenticorg.run("ASK_ZEROCARBON", {
+      question: data.question, screen: safeScreens.has(data.screen ?? "") ? data.screen : "/ask",
+      role: org?.roles.join(",") ?? "Visitor",
+    }, org?.id);
+    if (typeof result.answer !== "string") throw new Error("Invalid answer");
+    res.json(AskZeroCarbonResponse.parse({
+      answer: await guard(result.answer, data.screen ?? "/ask", org?.roles.join(",") ?? "Visitor", org?.id),
+      see_screen: typeof result.see_screen === "string" && safeScreens.has(result.see_screen) ? result.see_screen : "/market",
+      available: true, escalate: result.escalate === true,
+    }));
+  } catch {
+    res.json(AskZeroCarbonResponse.parse({
+      answer: "Our assistant is busy. You can still browse credits, use the filters and follow your demo orders.",
+      see_screen: "/market", available: false, escalate: false,
+    }));
+  }
+});
+
+// Approximate state outline used only to reject obviously out-of-coverage pins.
+// The models service must make the final coverage/land classification decision.
+const karnatakaOutline = [
+  [74.08, 15.78], [74.25, 16.50], [74.85, 16.90], [75.25, 16.85],
+  [75.60, 17.30], [76.15, 17.40], [76.45, 17.85], [77.55, 18.45],
+  [77.70, 17.45], [77.25, 16.40], [77.58, 15.85], [77.05, 15.10],
+  [76.90, 14.60], [77.60, 14.30], [78.50, 13.65], [78.60, 12.75],
+  [77.80, 12.45], [77.47, 11.65], [76.45, 11.58], [75.80, 12.10],
+  [75.37, 12.45], [74.85, 12.80], [74.50, 13.65], [74.00, 14.80],
+];
+function inKarnataka(lat: number, lon: number) {
+  let inside = false;
+  for (let i = 0, j = karnatakaOutline.length - 1; i < karnatakaOutline.length; j = i++) {
+    const a = karnatakaOutline[i], b = karnatakaOutline[j];
+    if (((a[1] > lat) !== (b[1] > lat)) && lon < (b[0] - a[0]) * (lat - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+  }
+  return inside;
+}
+function hasRange(value: unknown): value is string {
+  return typeof value === "string" && /\d[\d,.]*\s*(?:–|-|to)\s*(?:₹|Rs\.?\s*)?\d/i.test(value);
+}
+router.post("/scan", async (req, res) => {
+  const input = ScanLandBody.safeParse(req.body);
+  if (!input.success) { res.status(400).json({ error: "Choose a valid map pin." }); return; }
+  const org = await organisation(req), data = input.data;
+  await event("scan", org?.id ?? null, { lat: data.lat, lon: data.lon, demo: true });
+  if (!inKarnataka(data.lat, data.lon)) {
+    res.json(ScanLandResponse.parse({ available: false, message: "Scan covers Karnataka today; more states soon" })); return;
+  }
+  if (data.boundary_geojson) {
+    const geom = (data.boundary_geojson.type === "Feature" ? data.boundary_geojson.geometry : data.boundary_geojson) as { type?: string; coordinates?: unknown };
+    if (!geom || geom.type !== "Polygon" || !Array.isArray(geom.coordinates) || !Array.isArray(geom.coordinates[0])) {
+      res.status(400).json({ error: "Draw a valid land boundary polygon." }); return;
+    }
+    const ring = geom.coordinates[0] as unknown[];
+    if (ring.length < 4 || ring.length > 1000 || !ring.every(p => Array.isArray(p) &&
+      typeof p[0] === "number" && typeof p[1] === "number" && inKarnataka(p[1], p[0]))) {
+      res.status(400).json({ error: "Choose a boundary inside Karnataka with 3–999 corners." }); return;
+    }
+  }
+  try {
+    const base = process.env.MODELS_API_URL, key = process.env.MODELS_API_KEY;
+    if (!base || !key) throw new Error("Models not connected");
+    const url = new URL("/scan", base);
+    if (url.protocol !== "https:" && url.hostname !== "localhost") throw new Error("Models must use HTTPS");
+    const started = Date.now();
+    let raw: Record<string, unknown>;
+    try {
+      const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": key }, body: JSON.stringify(data), signal: AbortSignal.timeout(8000) });
+      if (!response.ok) throw new Error("Models service failed");
+      raw = await validateContract("ScanResult", await response.json());
+      await event("model_call", org?.id ?? null, { model: "scan", duration_ms: Date.now() - started, result: "success" });
+    } catch (err) {
+      await event("model_call", org?.id ?? null, { model: "scan", duration_ms: Date.now() - started, result: "failed" });
+      throw err;
+    }
+    let card = raw;
+    try { card = await agenticorg.run("LAND_SCOUT", { ...data, scan: raw }, org?.id); } catch { /* Models-only card. */ }
+    const guarded = async (value: unknown, fixed: string) => guard(typeof value === "string" ? value : fixed, "scan", org?.roles.join(",") ?? "Seller", org?.id);
+    res.json(ScanLandResponse.parse({
+      available: true, message: "",
+      headline: await guarded(card.headline, "Your demo land scan is ready"),
+      reasons: await Promise.all((Array.isArray(card.reasons) ? card.reasons.filter((x): x is string => typeof x === "string").slice(0, 3) : ["A field assessment is needed to confirm suitability."]).map(x => guarded(x, ""))),
+      what_to_plant: await guarded(card.what_to_plant, "Discuss suitable species with a local field team."),
+      credits_line: await guarded(hasRange(card.credits_line) ? card.credits_line : undefined, "A reliable credit range is not available from this scan."),
+      money_line: await guarded(hasRange(card.money_line) ? card.money_line : undefined, "A reliable money range is not available from this scan."),
+      next_step: await guarded(card.next_step, "Arrange an on-site assessment before making a decision."),
+      limitations: await guarded(card.limitations, "Satellites cannot confirm ownership, soil suitability, water access or eligibility. A person needs to check these."),
+    }));
+  } catch {
+    res.json(ScanLandResponse.parse({ available: false, message: "Scan is busy, try again in a minute" }));
+  }
+});
+export default router;
