@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { IMG, inr, num } from '@/lib/zc';
 import { Link as WLink } from 'wouter';
 import { formatFeeRate, pricing } from '@/lib/pricing';
+import { HomeExplainer } from '@/components/zc/home-explainer';
 
 export default function Home() {
   const summary = useGetMarketSummary({ query: { queryKey: getGetMarketSummaryQueryKey() } });
@@ -40,6 +41,7 @@ export default function Home() {
         </div>
       </section>
 
+      <HomeExplainer />
       <Page className="space-y-16 pt-0 md:pt-0">
         {/* Ledger strip */}
         <section className="rise rise-4 -mt-6 rounded-2xl border bg-card p-4 shadow-md md:p-6" data-testid="section-summary">

@@ -32,6 +32,18 @@ function maskName(value: unknown) {
   return [first, secondInitial].filter(Boolean).join(" ");
 }
 
+function safeSource(value: unknown) {
+  const source = safeText(value).toLowerCase();
+  switch (source) {
+    case "search engine": return "Search Engine";
+    case "social media": return "Social Media";
+    case "referral": return "Referral";
+    case "industry event": return "Industry Event";
+    case "other": return "Other";
+    default: return "Other";
+  }
+}
+
 function amountInr(value: unknown): number | null {
   if (typeof value !== "string" || !value.trim()) return null;
   const normalized = value.trim()
@@ -129,8 +141,7 @@ function summarize(csv: string, now: number): Omit<LiveSubmissions, "stale"> {
     }
 
     if (heardHeader) {
-      const cleaned = safeText(row[heardHeader]);
-      const source = cleaned ? maskName(cleaned) : "Not specified";
+      const source = safeSource(row[heardHeader]);
       heard.set(source, (heard.get(source) ?? 0) + 1);
     }
 

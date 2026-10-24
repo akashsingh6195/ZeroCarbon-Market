@@ -18,7 +18,7 @@ import { getLiveSubmissions } from "./src/lib/live-submissions.ts";
 process.env.LIVE_SUBMISSIONS_CSV_URL = "https://example.test/payments.csv";
 const csv = [
   "Timestamp,Name/Organisation,Product,Amount paid,Payment Screenshot,Date of Payment,Transaction/UTR,Notes,How did you hear about our services?,On a scale of 1-5, how satisfied were you with the payment process?",
-  '"10/24/2026 12:00:00","Akash Singh 9876543210 akash@example.test","Consultancy service","Rs 2,990","https://example.test/payment.png","10/24/2026","123456789012","private note, with ""quoted text""","Google Search +91 9876543210","5"',
+  '"10/24/2026 12:00:00","Akash Singh 9876543210 akash@example.test","Consultancy service","Rs 2,990","https://example.test/payment.png","10/24/2026","123456789012","private note, with ""quoted text""","Search Engine +91 9876543210","5"',
   ',Someone,"Buying carbon credits","not a number","screenshot","today","utr","notes","Friend","4"',
 ].join("\\n");
 let calls = 0;
@@ -32,7 +32,7 @@ assert.equal(first.total_submissions, 1, "Rows without timestamps are ignored");
 assert.equal(first.total_amount_inr, 2990);
 assert.equal(first.product_counts.consultancy_service, 1);
 assert.equal(first.average_satisfaction, 5);
-assert.deepEqual(first.heard_about, [{ source: "Google S.", count: 1 }]);
+assert.deepEqual(first.heard_about, [{ source: "Search Engine", count: 1 }]);
 assert.equal(first.latest[0].name, "Akash S.");
 assert.equal(first.latest[0].product, "Consultancy service");
 assert.equal(first.latest[0].amount_inr, 2990);
