@@ -11,6 +11,7 @@ export interface ScanResult {
   available: boolean;
   message: string;
   verdict?: ScanResultVerdict;
+  review_token?: string;
   headline?: string;
   reasons?: string[];
   what_to_plant?: string;

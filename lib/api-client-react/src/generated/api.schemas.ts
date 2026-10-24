@@ -64,6 +64,7 @@ export interface OrganisationInput {
 export interface Organisation {
   id: string;
   name: string;
+  phone: string;
   organisation_name: string;
   roles: string[];
   buyer_type: string;
@@ -265,6 +266,7 @@ export interface ScanResult {
   available: boolean;
   message: string;
   verdict?: ScanResultVerdict;
+  review_token?: string;
   headline?: string;
   reasons?: string[];
   what_to_plant?: string;
@@ -272,6 +274,113 @@ export interface ScanResult {
   money_line?: string;
   next_step?: string;
   limitations?: string;
+}
+
+/**
+ * @nullable
+ */
+export type LandReviewBoundaryGeojson = { [key: string]: unknown } | null;
+
+export type LandReviewScanJson = { [key: string]: unknown };
+
+export type LandReviewPaymentMode = typeof LandReviewPaymentMode[keyof typeof LandReviewPaymentMode];
+
+
+export const LandReviewPaymentMode = {
+  demo: 'demo',
+  real: 'real',
+} as const;
+
+export type LandReviewPaymentProvider = typeof LandReviewPaymentProvider[keyof typeof LandReviewPaymentProvider];
+
+
+export const LandReviewPaymentProvider = {
+  manual_upi: 'manual_upi',
+  pinelabs: 'pinelabs',
+  demo: 'demo',
+} as const;
+
+export type LandReviewStatus = typeof LandReviewStatus[keyof typeof LandReviewStatus];
+
+
+export const LandReviewStatus = {
+  awaiting_payment: 'awaiting_payment',
+  paid: 'paid',
+  visit_scheduled: 'visit_scheduled',
+  visited: 'visited',
+  proposal_ready: 'proposal_ready',
+  accepted: 'accepted',
+  refund_requested: 'refund_requested',
+  refunded: 'refunded',
+  cancelled: 'cancelled',
+} as const;
+
+export interface LandReview {
+  id: number;
+  booking_id: string;
+  name: string;
+  phone: string;
+  lat: number;
+  lon: number;
+  /** @nullable */
+  boundary_geojson: LandReviewBoundaryGeojson;
+  scan_json: LandReviewScanJson;
+  form_filled: boolean;
+  price_inr: number;
+  payment_mode: LandReviewPaymentMode;
+  payment_provider: LandReviewPaymentProvider;
+  status: LandReviewStatus;
+  /** @nullable */
+  field_partner: string | null;
+  /** @nullable */
+  visit_date: string | null;
+  /** @nullable */
+  proposal_text: string | null;
+  /** @nullable */
+  proposal_file: string | null;
+  /** @nullable */
+  proposal_sent_at: string | null;
+  /** @nullable */
+  refund_reason: string | null;
+  created_at: string;
+  /** @nullable */
+  paid_at: string | null;
+  /** @nullable */
+  refunded_at: string | null;
+  /** @nullable */
+  form_url: string | null;
+  /** @nullable */
+  upi_id: string | null;
+  /** @nullable */
+  refund_deadline: string | null;
+  can_refund: boolean;
+  no_visit_refund: boolean;
+  /** @nullable */
+  payment_utr: string | null;
+  /** @nullable */
+  refund_utr: string | null;
+}
+
+export interface LandReviewRevenue {
+  paid_count: number;
+  refunded_count: number;
+  paid_inr: number;
+  refunded_inr: number;
+  net_inr: number;
+}
+
+export type AdminLandReviewsRevenue = {
+  demo: LandReviewRevenue;
+  real: LandReviewRevenue;
+};
+
+export interface AdminLandReviews {
+  reviews: LandReview[];
+  revenue: AdminLandReviewsRevenue;
+  /** @nullable */
+  payment_warning: string | null;
+  /** @nullable */
+  form_responses_url: string | null;
 }
 
 export interface LiveStats {
@@ -356,5 +465,94 @@ vintage_from?: number;
 max_price?: number;
 region?: string;
 search?: string;
+};
+
+export type CreateLandReviewBody = {
+  /**
+     * @minLength 1
+     * @maxLength 50000
+     */
+  scan_token: string;
+};
+
+export type DecideLandReviewBodyAction = typeof DecideLandReviewBodyAction[keyof typeof DecideLandReviewBodyAction];
+
+
+export const DecideLandReviewBodyAction = {
+  accept: 'accept',
+  refund: 'refund',
+} as const;
+
+export type DecideLandReviewBody = {
+  action: DecideLandReviewBodyAction;
+  /** @maxLength 2000 */
+  reason?: string;
+};
+
+export type UpdateAdminLandReviewBodyAction = typeof UpdateAdminLandReviewBodyAction[keyof typeof UpdateAdminLandReviewBodyAction];
+
+
+export const UpdateAdminLandReviewBodyAction = {
+  form_filled: 'form_filled',
+  mark_paid: 'mark_paid',
+  schedule: 'schedule',
+  visited: 'visited',
+  proposal: 'proposal',
+  refund: 'refund',
+  mark_refunded: 'mark_refunded',
+} as const;
+
+export type UpdateAdminLandReviewBody = {
+  action: UpdateAdminLandReviewBodyAction;
+  form_filled?: boolean;
+  /**
+     * @minLength 6
+     * @maxLength 80
+     */
+  payment_utr?: string;
+  /**
+     * @minLength 6
+     * @maxLength 80
+     */
+  refund_utr?: string;
+  visit_date?: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  field_partner?: string;
+  /**
+     * @minLength 1
+     * @maxLength 20000
+     */
+  proposal_text?: string;
+  /** @maxLength 500 */
+  proposal_file?: string;
+};
+
+export type RequestLandReviewProposalUploadBodyContentType = typeof RequestLandReviewProposalUploadBodyContentType[keyof typeof RequestLandReviewProposalUploadBodyContentType];
+
+
+export const RequestLandReviewProposalUploadBodyContentType = {
+  'application/pdf': 'application/pdf',
+} as const;
+
+export type RequestLandReviewProposalUploadBody = {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 5242880
+     */
+  size: number;
+  content_type: RequestLandReviewProposalUploadBodyContentType;
+};
+
+export type RequestLandReviewProposalUpload200 = {
+  upload_url: string;
+  object_path: string;
 };
 
