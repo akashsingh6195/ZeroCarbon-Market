@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { formatInr, formatPriceRange, pricing } from '@/lib/pricing';
 import { Button } from '@/components/ui/button';
+import { errMsg } from '@/lib/zc';
 
 export default function Comply() {
   const qc = useQueryClient();
@@ -27,6 +28,7 @@ export default function Comply() {
           <p className="mt-3 text-sm leading-relaxed">Comply Lite: a free readiness checklist and links to the official process. Comply Pro: {formatInr(pricing.packages.comply_pro.annual_inr)} a year for the compliance calendar, document checklist, scenario worksheets and reminders. Comply Enterprise: {formatPriceRange(pricing.packages.comply_enterprise.annual_min_inr, pricing.packages.comply_enterprise.annual_max_inr)} a year for many plants.</p>
           <p className="mt-3 text-sm leading-relaxed">ZeroCarbon never charges for placing a compliance bid and does not run an exchange. Plants trade only through the official power exchanges.</p>
           {thanks ? <p role="status" className="mt-4 font-semibold" data-testid="status-comply-interest"><Check className="mr-2 inline h-4 w-4" />Thanks, we will get in touch. Demo: nothing is charged.</p> : <Button className="mt-4 h-11" disabled={interest.isPending} onClick={() => interest.mutate({ data: { plan: 'comply_pro' } }, { onSuccess: () => { setThanks(true); qc.invalidateQueries({ queryKey: getGetAdminDashboardQueryKey() }); } })} data-testid="button-comply-interest">Tell me when it's ready</Button>}
+           {interest.isError && <p role="alert" className="mt-2 text-sm">{errMsg(interest.error, 'Could not save your interest. Please try again.')}</p>}
         </div>
       </div>
     </Page>

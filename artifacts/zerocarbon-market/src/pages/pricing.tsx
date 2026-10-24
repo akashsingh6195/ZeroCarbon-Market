@@ -8,6 +8,7 @@ import { DemoChip } from '@/components/zc/demo-chip';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/lib/session';
 import { checkedOnLabel, formatFeeRate, formatInr, formatPriceRange, pricing } from '@/lib/pricing';
+import { errMsg } from '@/lib/zc';
 
 type Row = { service: string; price: string; payer: string; why: string };
 
@@ -50,7 +51,7 @@ export default function Pricing() {
   const status = String(p.status);
   const land = p.packages.landowner;
   const plans = [
-    { name: 'Farmer or landowner', icon: Sprout, price: 'Free to start', detail: `Scan, the credit range, route comparison, joining the Pool, the Path tracker, and every deduction shown before you sign.`, extra: `Optional assisted survey ${formatInr(land.assisted_survey_inr)}, usually paid by your FPO or project developer.`, href: '/scan', cta: 'Check my land', highlight: false },
+    { name: 'Farmer or landowner', icon: Sprout, price: formatInr(land.price_inr), detail: `Scan, the credit range, route comparison, joining the Pool, the Path tracker, and every deduction shown before you sign.`, extra: `Optional assisted survey ${formatInr(land.assisted_survey_inr)}, usually paid by your FPO or project developer.`, href: '/scan', cta: 'Check my land', highlight: false },
     { name: 'FPO or project starter', icon: Leaf, price: `${formatInr(p.packages.pool_essential.annual_inr)} a year`, detail: `Pool Essential · up to ${p.packages.pool_essential.max_plots.toLocaleString('en-IN')} plots, bulk plot upload, document checklist, status tracking, standard exports and some support hours.`, extra: `Starts with a free ${p.packages.pool_starter.pilot_days}-day pilot. Surveys and fieldwork are quoted separately: operator cost plus a disclosed coordination charge.`, plan: 'pool_starter' as const, cta: 'Start the free 90-day pilot', highlight: true },
     { name: 'Project developer', icon: Landmark, price: `${formatInr(p.packages.pool_growth.annual_inr)} a year`, detail: `Pool Growth · up to ${p.packages.pool_growth.max_plots.toLocaleString('en-IN')} plots, field-team roles, monitoring log, bulk uploads and reports.`, extra: `Project coordination ${formatPriceRange(p.services.project_coordination_min_inr, p.services.project_coordination_max_inr)} per agreed work package.`, plan: 'pool_growth' as const, cta: 'Talk to us', highlight: false },
     { name: 'Company or trader', icon: Building2, price: `${formatPriceRange(p.packages.company_or_trader.annual_min_inr, p.packages.company_or_trader.annual_max_inr)} a year`, detail: `ZeroCarbon Desk for traders (voluntary credits only), ZeroCarbon Comply Pro or Enterprise for plants with a CCTS target, and buyer reports.`, extra: 'Our deal fee applies only to completed deals.', plan: 'company_or_trader' as const, cta: 'Talk to us', highlight: false },
@@ -100,9 +101,10 @@ export default function Pricing() {
       <PageTitle eyebrow="Clear prices, before any work" title="Free to check. Pay only for work that saves you time, or when a deal completes." />
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-[hsl(var(--marigold))] bg-card p-4" data-testid="status-pricing-demo">
         <DemoChip /><span className="rounded-full bg-[hsl(var(--leaf)/0.14)] px-3 py-1 text-xs font-bold text-[hsl(var(--forest))]">Proposed launch prices</span>
-        <span className="text-sm font-medium">{status}. Demo: no payment is taken.</span>
+        <span className="text-sm font-medium">Proposed prices. Demo: no payment is taken.</span>
       </div>
       {thanks && <p role="status" className="rounded-xl border border-[hsl(var(--leaf)/0.5)] bg-[hsl(var(--leaf)/0.12)] p-4 text-sm font-semibold" data-testid="status-interest-thanks"><Check className="mr-2 inline h-4 w-4" />{thanks}</p>}
+      {interest.isError && <p role="alert" className="text-sm text-destructive">{errMsg(interest.error, 'Could not save your interest. Please try again.')}</p>}
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" aria-label="Plans">
         {plans.map((x, i) => <article key={x.name} className={`flex min-w-0 flex-col rounded-2xl border bg-card p-5 transition-transform duration-200 hover:-translate-y-1 ${x.highlight ? 'border-[hsl(var(--forest))] shadow-md' : ''}`} data-testid={`card-plan-${i}`}>
           <x.icon className="h-6 w-6 text-[hsl(var(--forest))]" />
@@ -130,7 +132,7 @@ export default function Pricing() {
             ['Issuance', `${formatInr(of.issuance_per_credit_inr)} per credit`],
           ].map(([label, value]) => <div key={label} className="flex flex-wrap justify-between gap-2 rounded-lg bg-background p-3 text-sm"><span>{label}</span><strong>{value}</strong></div>)}
         </div>
-        <p className="border-t p-4 text-sm text-muted-foreground">Paid to the registry, not to ZeroCarbon. Checked {checkedOnLabel()}; check the current official schedule before paying. Independent validation and verification are quoted directly by the accredited agency.</p>
+        <p className="border-t p-4 text-sm text-muted-foreground">Set by {of.set_by} under the offset fee schedule, paid to the registry, not to ZeroCarbon. Checked {checkedOnLabel()}; check the current official schedule before paying. Independent validation and verification are quoted directly by the accredited agency.</p>
       </section>
       <section className="rounded-3xl bg-[hsl(var(--soil))] p-5 text-[hsl(var(--paper))] md:p-7" data-testid="section-never-charge">
         <h2 className="font-display text-2xl font-semibold">What we never charge for</h2>

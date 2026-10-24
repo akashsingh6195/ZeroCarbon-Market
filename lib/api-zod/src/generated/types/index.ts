@@ -44,5 +44,6 @@ export * from './rankedListing';
 export * from './scanInput';
 export * from './scanInputBoundaryGeojson';
 export * from './scanResult';
+export * from './scanResultVerdict';
 export * from './session';
 export * from './visitInput';

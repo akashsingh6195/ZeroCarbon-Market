@@ -7,7 +7,7 @@ import { CardSkeletons, ErrorState } from '@/components/zc/states';
 import { errMsg, errStatus, fmtDate, inr, num } from '@/lib/zc';
 import { OrderMoney, feeStatusLabel } from '@/components/zc/order-money';
 import { useSession } from '@/lib/session';
-import { formatFeeRate } from '@/lib/pricing';
+import { formatFeeRate, formatInr } from '@/lib/pricing';
 
 export default function Orders() {
   const session = useSession();
@@ -48,7 +48,7 @@ export default function Orders() {
                   <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-border"><div className="h-full origin-left bg-[hsl(var(--leaf))] transition-transform duration-700" style={{ transform: `scaleX(${pct / 100})` }} /></div>
                   <div className="mt-1.5 flex flex-wrap justify-between gap-2 text-xs font-medium" data-testid={`text-stage-${o.id}`}><span>{o.stage}</span><span>{feeStatusLabel(o.fee_status)} · fee {inr(o.fee_inr)}</span></div>
                   <div className="mt-3"><OrderMoney order={o} /></div>
-                  {session.org?.id && session.org.id === o.listing.seller_org_id && o.fee_rate > 0 && <p className="mt-2 text-xs text-[hsl(var(--forest))]" data-testid={`text-order-seller-${o.id}`}>Listing is free. When a deal completes, ZeroCarbon keeps {formatFeeRate(o.fee_rate)} and you receive the rest.</p>}
+                  {session.org?.id && session.org.id === o.listing.seller_org_id && <p className="mt-2 text-xs text-[hsl(var(--forest))]" data-testid={`text-order-seller-${o.id}`}>{o.fee_rate > 0 ? `Listing is free. When a deal completes, ZeroCarbon keeps ${formatFeeRate(o.fee_rate)} and you receive the rest.` : 'Listing is free. No ZeroCarbon fee for this market.'} At {formatInr(o.price_inr_per_t)} a tonne you receive about {formatInr(o.price_inr_per_t * (1 - o.fee_rate))} a tonne.</p>}
                 </Link>
               </li>
             );

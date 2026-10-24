@@ -8,7 +8,7 @@ import { useSession } from '@/lib/session';
 import { errMsg } from '@/lib/zc';
 import { formatFeeRate, pricing } from '@/lib/pricing';
 
-type Turn = { q: string; a?: Answer; error?: string };
+type Turn = { id: string; q: string; a?: Answer; error?: string };
 
 const SUGGEST = [
   'How does ZeroCarbon make money?',
@@ -29,19 +29,20 @@ export function AskPanel({ onNavigate }: { onNavigate?: () => void }) {
   const send = (q: string) => {
     const question = q.trim();
     if (!question) return;
+    const turnId = crypto.randomUUID();
     if (question.toLowerCase().replace(/[?.!]/g, '').trim() === 'how does zerocarbon make money') {
       setText('');
-      setTurns((t) => [...t, { q: question, a: { answer: REVENUE_ANSWER, see_screen: '/pricing', escalate: false, available: true } }]);
+      setTurns((t) => [...t, { id: turnId, q: question, a: { answer: REVENUE_ANSWER, see_screen: '/pricing', escalate: false, available: true } }]);
       return;
     }
     if (ask.isPending) return;
     setText('');
-    setTurns((t) => [...t, { q: question }]);
+    setTurns((t) => [...t, { id: turnId, q: question }]);
     ask.mutate(
       { data: { question, screen: location, role: roleLabel } },
       {
-        onSuccess: (a) => setTurns((t) => t.map((x, i) => (i === t.length - 1 ? { ...x, a } : x))),
-        onError: (e) => setTurns((t) => t.map((x, i) => (i === t.length - 1 ? { ...x, error: errMsg(e) } : x))),
+        onSuccess: (a) => setTurns((t) => t.map((x) => (x.id === turnId ? { ...x, a } : x))),
+        onError: (e) => setTurns((t) => t.map((x) => (x.id === turnId ? { ...x, error: errMsg(e) } : x))),
       },
     );
   };
@@ -62,7 +63,7 @@ export function AskPanel({ onNavigate }: { onNavigate?: () => void }) {
           </div>
         )}
         {turns.map((t, i) => (
-          <div key={i} className="space-y-2">
+          <div key={t.id} className="space-y-2">
             <div className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-[hsl(var(--forest))] px-3 py-2 text-sm text-[hsl(var(--paper))]">{t.q}</div>
             {!t.a && !t.error && (
               <div className="flex w-fit gap-1 rounded-2xl bg-card px-4 py-3 border">

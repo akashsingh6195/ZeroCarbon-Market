@@ -140,7 +140,7 @@ router.post("/scan", async (req, res) => {
       }, org?.id);
     } catch { /* Use the deterministic ScanResult card. */ }
     if (!card) {
-      res.json(ScanLandResponse.parse({ available: true, message: "", ...fallbackScanCard(raw) }));
+      res.json(ScanLandResponse.parse({ available: true, message: "", verdict: raw.verdict, ...fallbackScanCard(raw) }));
       return;
     }
     const guarded = async (value: unknown, fixed: string) => guard(typeof value === "string" ? value : fixed, "scan", org?.roles.join(",") ?? "Seller", org?.id);
@@ -153,7 +153,7 @@ router.post("/scan", async (req, res) => {
     const creditsLine = typeof card.credits_line === "string" && hasRange(card.credits_line) ? card.credits_line : "";
     const moneyLine = typeof card.money_line === "string" && hasRange(card.money_line) ? card.money_line : "";
     res.json(ScanLandResponse.parse({
-      available: true, message: "",
+      available: true, message: "", verdict: raw.verdict,
       headline: await guarded(card.headline, "Your demo land scan is ready"),
       reasons: await Promise.all(why.filter(x => x.trim()).slice(0, 3).map(x => guarded(x, ""))),
       next_step: await guarded(card.next_step, "Arrange an on-site assessment before making a decision."),

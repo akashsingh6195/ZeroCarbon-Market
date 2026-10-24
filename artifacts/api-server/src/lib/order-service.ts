@@ -3,7 +3,7 @@ import { and, eq, lt, inArray } from "drizzle-orm";
 import { defaultClaim } from "./market";
 import { agenticorg, guard } from "./agenticorg";
 import { logger } from "./logger";
-import { feeStatusForOrder, isCancelledBeforeDelivery } from "./pricing";
+import { feeStatusForOrder, isCancelledStage } from "./pricing";
 
 export function orderStages(route: string) {
   return route === "india_offset"
@@ -34,9 +34,10 @@ export async function advanceOrder(id: string) {
   return db.transaction(async tx => {
     const [row] = await tx.select().from(ordersTable).where(eq(ordersTable.id, id)).for("update");
     if (!row) return null;
-    if (isCancelledBeforeDelivery(row.stage, row.stages_done)) {
-      if (row.fee_status !== "cancelled") {
-        const [cancelled] = await tx.update(ordersTable).set({ fee_status: "cancelled" }).where(eq(ordersTable.id, id)).returning();
+    if (isCancelledStage(row.stage)) {
+      const feeStatus = feeStatusForOrder(row.route, row.stage, row.stages_done);
+      if (row.fee_status !== feeStatus) {
+        const [cancelled] = await tx.update(ordersTable).set({ fee_status: feeStatus }).where(eq(ordersTable.id, id)).returning();
         return cancelled;
       }
       return row;
@@ -48,7 +49,7 @@ export async function advanceOrder(id: string) {
     if (retired && !row.retired_logged) await tx.insert(eventsTable).values({
       kind: "retired", org_id: row.org_id, payload: { order_id: row.id, quantity_t: row.quantity_t, demo: true },
     });
-    if (row.stage !== stages[index] || (retired && !row.retired_logged)) {
+    if (row.stage !== stages[index] || (retired && !row.retired_logged) || row.fee_status !== feeStatusForOrder(row.route, stages[index], done)) {
       const [updated] = await tx.update(ordersTable).set({
         stage: stages[index], stages_done: done, retired_logged: retired || row.retired_logged,
         fee_status: feeStatusForOrder(row.route, stages[index], done),

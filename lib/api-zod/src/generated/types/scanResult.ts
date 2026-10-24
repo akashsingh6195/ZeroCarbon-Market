@@ -5,10 +5,12 @@
  * ZeroCarbon Market demo API
  * OpenAPI spec version: 0.1.0
  */
+import type { ScanResultVerdict } from './scanResultVerdict';
 
 export interface ScanResult {
   available: boolean;
   message: string;
+  verdict?: ScanResultVerdict;
   headline?: string;
   reasons?: string[];
   what_to_plant?: string;

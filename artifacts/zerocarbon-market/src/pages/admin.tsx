@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { errMsg, errStatus, fmtDate, inr, num } from '@/lib/zc';
-import { formatInr } from '@/lib/pricing';
+import { formatFeeRate, formatInr, pricing } from '@/lib/pricing';
 
 function pick(p: Record<string, unknown>, keys: string[]) {
   for (const k of keys) if (p[k] !== undefined && p[k] !== null) return p[k];
@@ -94,6 +94,7 @@ export default function Admin() {
 
             <section className="rounded-2xl border border-[hsl(var(--leaf)/0.55)] bg-[hsl(var(--leaf)/0.08)] p-5" data-testid="panel-revenue">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><h2 className="font-display text-2xl font-semibold">Revenue (demo)</h2><DemoChip /></div>
+              <p className="mb-4 text-sm text-muted-foreground">Current proposed seller fee: {formatFeeRate(pricing.deal_fee.standard_rate)}. Only ZeroCarbon's own fees and plans count as revenue; no plan payments are taken in this demo.</p>
               <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   ['Fees earned', formatInr(d.revenue.fees_earned_inr)],

@@ -11,10 +11,13 @@ export function feeAmountInr(quantityT: number, priceInrPerT: number, feeRate: n
   return Math.round(quantityT * priceInrPerT * feeRate);
 }
 
-export function isCancelledBeforeDelivery(stage: string, stagesDone: string[]) {
+export function isCancelledStage(stage: string) {
   const normalized = stage.toLowerCase();
-  const isCancelled = cancellationStages.has(normalized) || normalized.includes("cancel") || normalized.includes("refund");
-  return isCancelled && !stagesDone.includes("Credits delivered");
+  return cancellationStages.has(normalized) || normalized.includes("cancel") || normalized.includes("refund");
+}
+
+export function isCancelledBeforeDelivery(stage: string, stagesDone: string[]) {
+  return isCancelledStage(stage) && !stagesDone.includes("Credits delivered");
 }
 
 export function feeStatusForOrder(route: string, stage: string, stagesDone: string[]) {

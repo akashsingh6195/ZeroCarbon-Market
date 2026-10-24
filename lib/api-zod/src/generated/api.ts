@@ -390,6 +390,7 @@ export const ScanLandBody = zod.object({
 export const ScanLandResponse = zod.object({
   "available": zod.boolean(),
   "message": zod.string(),
+  "verdict": zod.enum(['likely_eligible', 'needs_checks', 'not_eligible']).optional(),
   "headline": zod.string().optional(),
   "reasons": zod.array(zod.string()).optional(),
   "what_to_plant": zod.string().optional(),

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { randomUUID, randomBytes } from "node:crypto";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, or, sql } from "drizzle-orm";
 import { db, ordersTable, listingsTable, eventsTable, type ListingRow } from "@workspace/db";
 import {
   CheckClaimBody, CheckClaimResponse, CreateOrderBody, CreateOrderResponse, GetOrdersResponse,
@@ -15,6 +15,10 @@ import { logger } from "../lib/logger";
 import { feeAmountInr, feeRateForRoute, feeStatusForOrder } from "../lib/pricing";
 
 const router = Router();
+// An order's server-created snapshot records its seller at the time of sale.
+const orderAccess = (org: { id: string; roles: string[] }) => org.roles.includes("Seller")
+  ? or(eq(ordersTable.org_id, org.id), sql`${ordersTable.listing_snapshot}->>'seller_org_id' = ${org.id}`)
+  : eq(ordersTable.org_id, org.id);
 router.post("/claim-check", async (req, res) => {
   const input = CheckClaimBody.safeParse(req.body);
   if (!input.success) { res.status(400).json({ error: "Choose a listing and valid quantity." }); return; }
@@ -80,7 +84,7 @@ router.post("/orders", async (req, res) => {
 router.get("/orders", async (req, res) => {
   const org = await organisation(req);
   if (!org) { res.status(401).json({ error: "Sign up to see your demo orders." }); return; }
-  const rows = await db.select().from(ordersTable).where(eq(ordersTable.org_id, org.id)).orderBy(desc(ordersTable.created_at));
+  const rows = await db.select().from(ordersTable).where(orderAccess(org)).orderBy(desc(ordersTable.created_at));
   const advanced = await Promise.all(rows.map(row => advanceOrder(row.id)));
   res.json(GetOrdersResponse.parse(advanced.filter(row => row !== null).map(publicOrder)));
 });
@@ -88,7 +92,7 @@ router.get("/orders/:id", async (req, res) => {
   const org = await organisation(req), params = GetOrderParams.safeParse(req.params);
   if (!org) { res.status(401).json({ error: "Sign up to see your demo orders." }); return; }
   if (!params.success) { res.status(400).json({ error: "Invalid order ID." }); return; }
-  const [owned] = await db.select().from(ordersTable).where(and(eq(ordersTable.id, params.data.id), eq(ordersTable.org_id, org.id)));
+  const [owned] = await db.select().from(ordersTable).where(and(eq(ordersTable.id, params.data.id), orderAccess(org)));
   if (!owned) { res.status(404).json({ error: "Order not found." }); return; }
   const row = await advanceOrder(owned.id);
   res.json(GetOrderResponse.parse(publicOrder(row!)));
@@ -106,7 +110,7 @@ router.post("/orders/:id/question", async (req, res) => {
   const org = await organisation(req), params = AskOrderParams.safeParse(req.params), input = AskOrderBody.safeParse(req.body);
   if (!org) { res.status(401).json({ error: "Sign in to ask about an order." }); return; }
   if (!params.success || !input.success) { res.status(400).json({ error: "Enter an order question." }); return; }
-  const [row] = await db.select().from(ordersTable).where(and(eq(ordersTable.id, params.data.id), eq(ordersTable.org_id, org.id)));
+  const [row] = await db.select().from(ordersTable).where(and(eq(ordersTable.id, params.data.id), orderAccess(org)));
   if (!row) { res.status(404).json({ error: "Order not found." }); return; }
   try {
     const result = await agenticorg.run("ORDER_CONCIERGE", { order: publicOrder(row), question: input.data.question }, org.id);

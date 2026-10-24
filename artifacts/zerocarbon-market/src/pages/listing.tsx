@@ -64,8 +64,8 @@ export default function ListingPage() {
                   <div><dt className="text-xs text-muted-foreground">Registry</dt><dd>{l.registry}</dd></div>
                   <div><dt className="text-xs text-muted-foreground">Method</dt><dd>{l.method}</dd></div>
                 </dl>
-                {ownsListing && feeRate > 0 && <div className="mt-4 rounded-xl border border-[hsl(var(--leaf)/0.5)] bg-[hsl(var(--leaf)/0.1)] p-3 text-sm" data-testid="text-seller-fee-disclosure">
-                  <p>Listing is free. When a deal completes, ZeroCarbon keeps {formatFeeRate(feeRate)} and you receive the rest.</p>
+                 {ownsListing && <div className="mt-4 rounded-xl border border-[hsl(var(--leaf)/0.5)] bg-[hsl(var(--leaf)/0.1)] p-3 text-sm" data-testid="text-seller-fee-disclosure">
+                   <p>{feeRate > 0 ? `Listing is free. When a deal completes, ZeroCarbon keeps ${formatFeeRate(feeRate)} and you receive the rest.` : 'Listing is free. No ZeroCarbon fee for this market.'}</p>
                   <p className="mt-1 font-semibold">At {formatInr(l.price_inr_per_t)} a tonne you receive about {formatInr(l.price_inr_per_t * (1 - feeRate))} a tonne.</p>
                 </div>}
                 {l.status === 'future' && (
@@ -82,6 +82,7 @@ export default function ListingPage() {
                 {l.status !== 'retired' && <div className="mt-4 border-t border-dashed pt-4" data-testid="section-due-diligence">
                   <p className="text-sm text-muted-foreground">Need a deeper check? Due-diligence report: {formatPriceRange(pricing.services.due_diligence_min_inr, pricing.services.due_diligence_max_inr)} per project, quoted first.</p>
                   {requested ? <p role="status" className="mt-2 text-sm font-semibold text-[hsl(var(--forest))]" data-testid="status-report-request">Thanks, we will get in touch. Demo: nothing is charged.</p> : <Button variant="outline" className="tap mt-3 w-full" disabled={interest.isPending} onClick={() => interest.mutate({ data: { plan: 'due_diligence', listing_id: l.id } }, { onSuccess: () => { setRequested(true); qc.invalidateQueries({ queryKey: getGetAdminDashboardQueryKey() }); } })} data-testid="button-request-report">Request a report</Button>}
+                  {interest.isError && <p role="alert" className="mt-2 text-sm text-destructive">{errMsg(interest.error, 'Could not save your request. Please try again.')}</p>}
                 </div>}
                 <NoMoneyNote className="mt-3" />
               </div>

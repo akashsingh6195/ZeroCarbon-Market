@@ -108,11 +108,6 @@ export default function Home() {
           <Link href="/market" className="tap mt-4 flex items-center justify-center gap-1 rounded-xl border text-sm font-semibold sm:hidden" data-testid="link-see-all-mobile">See all listings <ArrowRight className="h-4 w-4" /></Link>
         </section>
 
-        <section className="grid gap-4 rounded-2xl border border-[hsl(var(--leaf)/0.45)] bg-[hsl(var(--leaf)/0.1)] p-5 md:grid-cols-[1fr_auto] md:items-center" data-testid="section-revenue-strip">
-          <div><div className="text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--forest))]">A clear business model</div><p className="mt-2 text-sm leading-relaxed">How ZeroCarbon earns: free to check land, list credits and browse. Yearly plans for FPOs, developers and companies. {formatFeeRate(pricing.deal_fee.standard_rate)} only when a voluntary deal completes, paid by the seller.</p></div>
-          <WLink href="/pricing" className="tap inline-flex items-center justify-center gap-2 rounded-xl bg-[hsl(var(--forest))] px-5 text-sm font-semibold text-[hsl(var(--paper))]" data-testid="link-home-pricing">See pricing <ArrowRight className="h-4 w-4" /></WLink>
-        </section>
-
         {/* Land */}
         <section className="overflow-hidden rounded-3xl bg-[hsl(var(--soil))] text-[hsl(var(--paper))] md:grid md:grid-cols-2">
           <img src={IMG('aerial-plots.jpg')} alt="Aerial view of farm plots" className="h-56 w-full object-cover md:h-full" />
@@ -144,6 +139,11 @@ export default function Home() {
               </li>
             ))}
           </ol>
+        </section>
+
+        <section className="grid gap-4 rounded-2xl border border-[hsl(var(--leaf)/0.45)] bg-[hsl(var(--leaf)/0.1)] p-5 md:grid-cols-[1fr_auto] md:items-center" data-testid="section-revenue-strip">
+          <div><div className="text-xs font-semibold uppercase tracking-[0.16em] text-[hsl(var(--forest))]">A clear business model</div><p className="mt-2 text-sm leading-relaxed">How ZeroCarbon earns: free to check land, list credits and browse. Yearly plans for FPOs, developers and companies. {formatFeeRate(pricing.deal_fee.standard_rate)} only when a voluntary deal completes, paid by the seller.</p></div>
+          <WLink href="/pricing" className="tap inline-flex items-center justify-center gap-2 rounded-xl bg-[hsl(var(--forest))] px-5 text-sm font-semibold text-[hsl(var(--paper))]" data-testid="link-home-pricing">See pricing <ArrowRight className="h-4 w-4" /></WLink>
         </section>
 
         <section className="rounded-2xl border border-dashed border-[hsl(var(--marigold))] bg-[hsl(var(--marigold)/0.08)] p-5">

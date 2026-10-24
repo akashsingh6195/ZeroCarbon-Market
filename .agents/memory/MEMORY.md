@@ -1,0 +1,2 @@
+- [Revenue principles](revenue-principles.md) — proposed launch pricing, farmer protections, seller-side completion fees, and demo-only plan interest.
+- [Brand identity](brand-identity.md) — use the user's supplied green C, leaf, and coins logo for ZeroCarbon Market.

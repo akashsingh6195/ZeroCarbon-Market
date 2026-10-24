@@ -252,9 +252,19 @@ export interface ScanInput {
   boundary_geojson?: ScanInputBoundaryGeojson;
 }
 
+export type ScanResultVerdict = typeof ScanResultVerdict[keyof typeof ScanResultVerdict];
+
+
+export const ScanResultVerdict = {
+  likely_eligible: 'likely_eligible',
+  needs_checks: 'needs_checks',
+  not_eligible: 'not_eligible',
+} as const;
+
 export interface ScanResult {
   available: boolean;
   message: string;
+  verdict?: ScanResultVerdict;
   headline?: string;
   reasons?: string[];
   what_to_plant?: string;

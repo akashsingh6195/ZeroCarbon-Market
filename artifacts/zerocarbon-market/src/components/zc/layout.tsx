@@ -20,11 +20,7 @@ const NAV = [
 export function Logo() {
   return (
     <Link href="/" className="tap flex items-center gap-2" data-testid="link-home">
-      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden>
-        <rect width="28" height="28" rx="8" fill="#1E5B3A" />
-        <path d="M7 19c3-8 8-11 14-11-1 6-4 11-12 11" fill="#6FAE4F" />
-        <path d="M8 20l7-7" stroke="#F7F5EE" strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
+      <img src={`${import.meta.env.BASE_URL}images/zerocarbon-logo.png`} alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-lg bg-white object-contain" data-testid="image-logo" />
       <span className="font-bold tracking-tight">ZeroCarbon <span className="font-medium text-muted-foreground">Market</span></span>
     </Link>
   );

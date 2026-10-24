@@ -484,6 +484,7 @@ components:
       properties:
         available: {type: boolean}
         message: {type: string}
+        verdict: {type: string, enum: [likely_eligible, needs_checks, not_eligible]}
         headline: {type: string}
         reasons:
           type: array
