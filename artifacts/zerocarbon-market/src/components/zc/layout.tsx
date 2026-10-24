@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
-import { MessageCircle, Store, ScanLine, Package, LogOut, UserPlus } from 'lucide-react';
+import { MessageCircle, Store, ScanLine, Package, LogOut, UserPlus, Compass } from 'lucide-react';
 import { useLogout, useRecordVisit } from '@workspace/api-client-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ const NAV = [
   { href: '/orders', label: 'Orders', icon: Package },
   { href: '/ask', label: 'Ask', icon: MessageCircle },
   { href: '/pricing', label: 'Pricing', icon: Store },
+  { href: '/vision', label: 'Vision', icon: Compass },
 ];
 
 export function Logo() {
@@ -93,9 +94,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <main className={cn(!isLive && 'pb-28 md:pb-16')}>{children}</main>
 
       {!isLive && (
-        <footer className="mx-auto hidden max-w-6xl border-t px-4 py-8 text-xs text-muted-foreground md:block">
+        <footer className="mx-auto block w-full max-w-6xl border-t px-4 py-6 pb-28 text-xs text-muted-foreground md:py-8 md:pb-8">
           ZeroCarbon Market is a demonstration. All projects, prices, orders and certificates are fictional. No money moves. Buying credits does not make any organisation zero carbon.
-          <span className="ml-3"><Link href="/pricing" className="underline" data-testid="link-footer-pricing">Pricing</Link> · <Link href="/comply" className="underline">Comply</Link> · <Link href="/admin" className="underline">Admin</Link></span>
+          <span className="ml-3"><Link href="/pricing" className="underline" data-testid="link-footer-pricing">Pricing</Link> · <Link href="/vision" className="underline" data-testid="link-footer-vision">Vision</Link> · <Link href="/comply" className="underline">Comply</Link> · <Link href="/admin" className="underline">Admin</Link></span>
         </footer>
       )}
 
@@ -121,7 +122,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {/* Mobile bottom nav */}
       {!isLive && (
         <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-[hsl(var(--paper)/0.96)] pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden" data-testid="nav-bottom">
-          <div className="grid grid-cols-5">
+          <div className="grid grid-cols-6">
             {NAV.map((n) => {
               const active = location.startsWith(n.href);
               return (

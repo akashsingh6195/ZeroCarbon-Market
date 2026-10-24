@@ -36,7 +36,6 @@ export default function Live() {
       : 'Updated just now';
   const tiles = q.data ? [
     { k: 'Sign-ups', v: q.data.signups, c: 'var(--forest)' },
-    { k: 'Orders', v: q.data.orders, c: 'var(--registry)' },
     { k: 'Tonnes retired', v: q.data.tonnes_retired, c: 'var(--leaf)' },
     { k: 'Land scans', v: q.data.scans, c: 'var(--soil)' },
     { k: 'QR visits', v: q.data.qr_visits, c: 'var(--marigold)' },
