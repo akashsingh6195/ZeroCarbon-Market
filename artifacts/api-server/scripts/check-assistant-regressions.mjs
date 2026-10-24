@@ -87,10 +87,12 @@ assert.equal(forest.credits_line, undefined);
 assert.equal(forest.money_line, undefined);
 assert.deepEqual(normalizeNeedFilters({ market: [], action: ["removal"], status: [], vintage_min: 2024, max_price_inr: 1200, region: "India" }),
   { action: "removal", vintage_from: 2024, max_price: 1200 });
+assert.deepEqual(normalizeNeedFilters({ max_price: 0, vintage_min: "0", quantity_t: null, region: "null" }), {});
+let nextNeedFilters = { action: ["removal"], vintage_min: 2024, max_price_inr: 1200, region: "India" };
 agenticorg.run = async (name, inputs) => {
-  if (name === "NEED_INTERPRETER") return { demo: true, filters: { action: ["removal"], vintage_min: 2024, max_price_inr: 1200, region: "India" }, understood: "Removal credits from India, 2024 or later.", unclear: [] };
+  if (name === "NEED_INTERPRETER") return { demo: true, filters: nextNeedFilters, understood: "Removal credits from India, 2024 or later.", unclear: [] };
   assert.equal(name, "LISTING_MATCHER");
-  assert.equal(inputs.filters.vintage_from, 2024);
+  assert.ok(inputs.filters.action);
   throw new Error("Matcher unavailable");
 };
 const need = await post(marketRouter, "/need", { sentence: "500 tonnes of removals from India, 2024 or newer, under 1,200 a tonne" });
@@ -100,6 +102,27 @@ assert.equal(need.filters.max_price, 1200);
 assert.ok(Array.isArray(need.ranked));
 assert.equal(need.ranked.length, 1, "Filtered listings survive a matcher failure");
 assert.equal(need.ranked[0].listing.id, 1);
+globalThis.__needTestProvider = (filters, fixture) =>
+  filters.max_price || filters.vintage_from || filters.region || filters.status ? [] : [fixture];
+nextNeedFilters = { action: "removal", vintage_min: 2024, max_price_inr: 50, region: "Karnataka", status: "retired" };
+const relaxed = await post(marketRouter, "/need", { sentence: "a test need that has no exact match" });
+assert.equal(relaxed.message, "No exact match. Showing the closest listings.");
+assert.equal(relaxed.ranked.length, 1);
+assert.equal(relaxed.filters.max_price, undefined);
+assert.equal(relaxed.filters.vintage_from, undefined);
+assert.equal(relaxed.filters.region, undefined);
+assert.equal(relaxed.filters.status, undefined);
+nextNeedFilters = { action: "removal", quantity_t: 5000 };
+const quantityFallback = await post(marketRouter, "/need", { sentence: "5000 tonnes" });
+assert.equal(quantityFallback.message, "No exact match. Showing the closest listings.");
+assert.equal(quantityFallback.filters.quantity_t, undefined);
+assert.equal(quantityFallback.ranked.length, 1);
+globalThis.__needTestProvider = (filters, fixture) => filters.market === "india_compliance" ? [] : [fixture];
+nextNeedFilters = { market: "india_compliance" };
+const complianceFallback = await post(marketRouter, "/need", { sentence: "compliance credits" });
+assert.equal(complianceFallback.filters.compliance_unavailable, true);
+assert.equal(complianceFallback.message, "No exact match. Showing the closest listings.");
+assert.ok(complianceFallback.ranked.length);
 agenticorg.run = originalRun;
 globalThis.fetch = originalFetch;
 AbortSignal.timeout = originalTimeout;
@@ -114,16 +137,18 @@ console.log("PASS: bundled schema, six Land Scout failure paths, exact task enve
         builder.onLoad({ filter: /src\/lib\/events\.ts$/ }, () => ({ contents: "export async function event() {}", loader: "ts" }));
         builder.onLoad({ filter: /src\/lib\/logger\.ts$/ }, () => ({ contents: "export const logger = {info(){},warn(){},error(){}};", loader: "ts" }));
         builder.onLoad({ filter: /src\/lib\/market\.ts$/ }, () => ({
-          contents: `export async function visibleListings(_org, filters) {
+          contents: `const fixture = {
+            id: 1, project_name: "Test removal project", region: "Karnataka",
+            market: "voluntary", action: "removal", status: "issued", vintage: 2024,
+            registry: "Demo registry", method: "Agroforestry", price_inr_per_t: 1200,
+            quantity_t: 1000, delivery_year: null, zerocarbon_score: 92,
+            seller_org_id: null, lat: 13.435, lon: 77.731,
+            description: "Demo data", hidden: false, demo: true
+          };
+          export async function visibleListings(_org, filters) {
+            if (globalThis.__needTestProvider) return globalThis.__needTestProvider(filters, fixture);
             if(filters.action !== "removal" || filters.vintage_from !== 2024 || filters.max_price !== 1200 || filters.region) throw new Error("Wrong filters");
-            return [{
-              id: 1, project_name: "Test removal project", region: "Karnataka",
-              market: "voluntary", action: "removal", status: "issued", vintage: 2024,
-              registry: "Demo registry", method: "Agroforestry", price_inr_per_t: 1200,
-              quantity_t: 1000, delivery_year: null, zerocarbon_score: 92,
-              seller_org_id: null, lat: 13.435, lon: 77.731,
-              description: "Demo data", hidden: false, demo: true
-            }];
+            return [fixture];
           } export async function visibleListing(){ return null; }`,
           loader: "ts",
         }));

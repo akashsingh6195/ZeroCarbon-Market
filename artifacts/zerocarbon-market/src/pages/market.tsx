@@ -40,6 +40,7 @@ function filterMatches(l: Listing, f: Record<string, unknown>) {
     if (k === 'vintage_from' && l.vintage < Number(v)) return false;
     if (k === 'max_price' && l.price_inr_per_t > Number(v)) return false;
     if (k === 'region' && !l.region.toLowerCase().includes(String(v).toLowerCase())) return false;
+    if (k === 'quantity_t' && l.quantity_t < Number(v)) return false;
   }
   return true;
 }
@@ -56,21 +57,22 @@ export default function Market() {
   const interpret = useInterpretNeed();
 
   const params = useMemo(() => {
+    const active = need?.available ? needFilters : f;
     const p: GetListingsParams = {};
-    if (f.market) p.market = f.market;
-    if (f.action) p.action = f.action;
-    if (f.status) p.status = f.status;
-    if (f.vintage_from) p.vintage_from = Number(f.vintage_from);
-    if (f.max_price) p.max_price = Number(f.max_price);
-    if (f.region.trim()) p.region = f.region.trim();
+    if (active.market) p.market = String(active.market);
+    if (active.action) p.action = String(active.action);
+    if (active.status) p.status = String(active.status);
+    if (active.vintage_from) p.vintage_from = Number(active.vintage_from);
+    if (active.max_price) p.max_price = Number(active.max_price);
+    if (typeof active.region === 'string' && active.region.trim()) p.region = active.region.trim();
     return Object.keys(p).length ? p : undefined;
-  }, [f]);
+  }, [f, need?.available, needFilters]);
 
   const listings = useGetListings(params, { query: { queryKey: getGetListingsQueryKey(params) } });
   const all = useGetListings(undefined, { query: { queryKey: getGetListingsQueryKey() } });
   const byId = useMemo(() => new Map((all.data ?? []).concat(listings.data ?? []).map((l) => [l.id, l])), [all.data, listings.data]);
   const compared = compare.map((id) => byId.get(id)).filter(Boolean) as Listing[];
-  const activeCount = Object.values(f).filter(Boolean).length;
+  const activeCount = Object.values(need?.available ? needFilters : f).filter(Boolean).length;
 
   const runNeed = () => {
     if (!sentence.trim()) return;
@@ -91,9 +93,14 @@ export default function Market() {
   };
 
   const toggleCompare = (id: number, v: boolean) => setCompare((c) => (v ? (c.length >= 3 ? c : [...c, id]) : c.filter((x) => x !== id)));
-  const rankedVisible = need?.ranked.filter((r) => filterMatches(r.listing, needFilters)) ?? [];
+  const gridListings = (listings.data ?? []).filter((l) => !need?.available || filterMatches(l, needFilters));
 
   const markets = isTrader ? { voluntary: MARKET_LABEL.voluntary } : isObligated ? { india_compliance: MARKET_LABEL.india_compliance } : MARKET_LABEL;
+  const rankReasons = new Map((need?.ranked ?? []).map((item) => [item.listing.id, item.why]));
+  const rankedVisible = gridListings.map((listing) => ({
+    listing,
+    why: rankReasons.get(listing.id) ?? "Matches your requested filters.",
+  }));
 
   return (
     <Page>
@@ -146,10 +153,17 @@ export default function Market() {
           </div>
           {need.available && (
             <>
+              {need.message && <p className="mt-3 text-sm font-medium" data-testid="text-need-fallback">{need.message}</p>}
+              {needFilters.compliance_unavailable === true && (
+                <p className="mt-2 text-sm" data-testid="text-need-comply">
+                  Obligated plant? Use ZeroCarbon Comply to plan your purchases.{' '}
+                  <Link href="/comply" className="font-semibold underline">Go to ZeroCarbon Comply</Link>
+                </p>
+              )}
               <div className="mt-3 flex flex-wrap gap-2">
-                {Object.entries(needFilters).filter(([, v]) => v !== null && v !== undefined && v !== '').map(([k, v]) => (
+                {Object.entries(needFilters).filter(([k, v]) => k !== 'compliance_unavailable' && v !== null && v !== undefined && v !== '').map(([k, v]) => (
                   <button key={k} onClick={() => setNeedFilters((nf) => { const n = { ...nf }; delete n[k]; return n; })} className="inline-flex min-h-9 items-center gap-1.5 rounded-full border bg-secondary px-3 text-xs font-medium" data-testid={`chip-need-filter-${k}`}>
-                    {k.replace('_', ' ')}: {String(MARKET_LABEL[String(v)] ?? ACTION_LABEL[String(v)] ?? STATUS_LABEL[String(v)] ?? v)} <X className="h-3 w-3" />
+                    {k === 'quantity_t' ? 'tonnes required' : k.replace('_', ' ')}: {String(MARKET_LABEL[String(v)] ?? ACTION_LABEL[String(v)] ?? STATUS_LABEL[String(v)] ?? v)} <X className="h-3 w-3" />
                   </button>
                 ))}
                 <Button variant="outline" size="sm" className="min-h-9" onClick={applyNeedToFilters} data-testid="button-apply-need">Use as filters</Button>
@@ -168,7 +182,7 @@ export default function Market() {
         <Button variant="outline" className="tap" onClick={() => setShowFilters((s) => !s)} data-testid="button-toggle-filters">
           <SlidersHorizontal className="mr-2 h-4 w-4" /> Filters{activeCount ? ` (${activeCount})` : ''}
         </Button>
-        <span className="text-sm text-muted-foreground" data-testid="text-result-count">{listings.data ? `${listings.data.length} listings` : ''}</span>
+        <span className="text-sm text-muted-foreground" data-testid="text-result-count">{listings.data ? `${gridListings.length} listings` : ''}</span>
       </div>
       {showFilters && (
         <div className="mb-6 grid grid-cols-2 gap-3 rounded-2xl border bg-card p-4 md:grid-cols-6">
@@ -188,7 +202,7 @@ export default function Market() {
 
       {listings.isLoading ? <CardSkeletons n={6} /> : listings.isError ? (
         <ErrorState message={errMsg(listings.error, 'Could not load listings.')} onRetry={() => listings.refetch()} />
-      ) : listings.data && listings.data.length === 0 ? (
+      ) : listings.data && gridListings.length === 0 ? (
         <div className="rounded-2xl border border-dashed p-10 text-center" data-testid="status-empty">
           <p className="font-display text-2xl">Nothing matches those labels.</p>
           <p className="mt-2 text-sm text-muted-foreground">Try a higher price limit or an earlier vintage.</p>
@@ -196,7 +210,7 @@ export default function Market() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {listings.data?.map((l) => <ListingCard key={l.id} l={l} compareChecked={compare.includes(l.id)} compareDisabled={compare.length >= 3} onCompare={(v) => toggleCompare(l.id, v)} />)}
+          {gridListings.map((l) => <ListingCard key={l.id} l={l} compareChecked={compare.includes(l.id)} compareDisabled={compare.length >= 3} onCompare={(v) => toggleCompare(l.id, v)} />)}
         </div>
       )}
 

@@ -46,8 +46,55 @@ router.post("/need", async (req, res) => {
   const org = await organisation(req);
   try {
     const interpreted = await agenticorg.run("NEED_INTERPRETER", { sentence: parsed.data.sentence }, org?.id);
-    const filters = GetListingsQueryParams.parse(normalizeNeedFilters(interpreted.filters as Record<string, unknown>));
-    const visible = await visibleListings(org, filters);
+    const normalized = normalizeNeedFilters(interpreted.filters as Record<string, unknown>);
+    const quantity = typeof normalized.quantity_t === "number" ? normalized.quantity_t : Number(normalized.quantity_t);
+    delete normalized.quantity_t;
+    let filters = GetListingsQueryParams.parse(normalized);
+    const requestedCompliance = filters.market === "india_compliance";
+    const hasComplianceInventory = requestedCompliance
+      ? (await visibleListings(org, { market: "india_compliance" })).length > 0
+      : true;
+    const candidateOrg = requestedCompliance && !hasComplianceInventory ? null : org;
+    let visible = await visibleListings(candidateOrg, filters);
+    let relaxed = false;
+    const relaxOrder = ["max_price", "vintage_from", "region", "status"] as const;
+    for (const key of relaxOrder) {
+      if (visible.length) break;
+      if (filters[key] !== undefined) {
+        const next = { ...filters };
+        delete next[key];
+        filters = GetListingsQueryParams.parse(next);
+        visible = await visibleListings(candidateOrg, filters);
+        relaxed = true;
+      }
+    }
+    // If no listing matches the interpreted category/market either, show the
+    // closest inventory rather than leaving a valid natural-language request empty.
+    for (const key of ["action", "market"] as const) {
+      if (visible.length) break;
+      if (filters[key] !== undefined) {
+        const next = { ...filters };
+        delete next[key];
+        filters = GetListingsQueryParams.parse(next);
+        visible = await visibleListings(candidateOrg, filters);
+        relaxed = true;
+      }
+    }
+    if (!visible.length) {
+      filters = GetListingsQueryParams.parse({});
+      visible = await visibleListings(candidateOrg);
+      relaxed = true;
+    }
+    let quantityApplied = false;
+    if (Number.isFinite(quantity) && quantity > 0) {
+      const enough = visible.filter(listing => listing.quantity_t >= quantity);
+      if (enough.length) {
+        visible = enough;
+        quantityApplied = true;
+      } else {
+        relaxed = true;
+      }
+    }
     let ranked = visible.map(listing => ({ listing, why: "Matches your requested filters." }));
     try {
       const matches = await agenticorg.run("LISTING_MATCHER", {
@@ -65,8 +112,15 @@ router.post("/need", async (req, res) => {
     }
     res.json(InterpretNeedResponse.parse({
       // Local safety avoids an extra remote guard call for every listing.
-      available: true, message: "", understood: guardLocally(interpreted.understood as string),
-      filters, ranked,
+      available: true,
+      message: relaxed ? "No exact match. Showing the closest listings." : "",
+      understood: guardLocally(interpreted.understood as string),
+      filters: {
+        ...filters,
+        ...(quantityApplied ? { quantity_t: quantity } : {}),
+        ...(requestedCompliance && !hasComplianceInventory ? { compliance_unavailable: true } : {}),
+      },
+      ranked,
     }));
   } catch {
     res.json(InterpretNeedResponse.parse({
