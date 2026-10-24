@@ -430,6 +430,30 @@ export const GetLiveStatsResponse = zod.object({
 })
 
 
+export const GetLiveSubmissionsResponse = zod.object({
+  "total_submissions": zod.number().int(),
+  "total_amount_inr": zod.number(),
+  "product_counts": zod.object({
+  "buying_carbon_credits": zod.number().int(),
+  "consultancy_service": zod.number().int(),
+  "listing_on_zerocarbon": zod.number().int()
+}),
+  "average_satisfaction": zod.number().nullable(),
+  "heard_about": zod.array(zod.object({
+  "source": zod.string(),
+  "count": zod.number().int()
+})),
+  "latest": zod.array(zod.object({
+  "timestamp": zod.string().nullable(),
+  "name": zod.string(),
+  "product": zod.string(),
+  "amount_inr": zod.number().nullable()
+})),
+  "updated_at": zod.string().nullable(),
+  "stale": zod.boolean()
+})
+
+
 export const recordVisitBodySrcMax = 100;
 
 

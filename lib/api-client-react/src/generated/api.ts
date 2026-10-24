@@ -36,6 +36,7 @@ import type {
   Listing,
   ListingVisibility,
   LiveStats,
+  LiveSubmissions,
   MarketSummary,
   Message,
   NeedInput,
@@ -1653,6 +1654,101 @@ export function useGetLiveStats<TData = Awaited<ReturnType<typeof getLiveStats>>
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getGetLiveStatsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetLiveSubmissionsUrl = () => {
+
+
+
+
+  return `/api/live/submissions`
+}
+
+export const getLiveSubmissions = async ( options?: Parameters<typeof customFetch>[1]): Promise<LiveSubmissions> => {
+
+  return customFetch<LiveSubmissions>(getGetLiveSubmissionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLiveSubmissionsQueryKey = () => {
+    return [
+    `/api/live/submissions`
+    ] as const;
+    }
+
+
+export const getGetLiveSubmissionsQueryOptions = <TData = Awaited<ReturnType<typeof getLiveSubmissions>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLiveSubmissions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLiveSubmissionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLiveSubmissions>>> = ({ signal }) => getLiveSubmissions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLiveSubmissions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetLiveSubmissionsQueryResult = NonNullable<Awaited<ReturnType<typeof getLiveSubmissions>>>
+export type GetLiveSubmissionsQueryError = ErrorType<unknown>
+
+
+export function useGetLiveSubmissions<TData = Awaited<ReturnType<typeof getLiveSubmissions>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLiveSubmissions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLiveSubmissions>>,
+          TError,
+          Awaited<ReturnType<typeof getLiveSubmissions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetLiveSubmissions<TData = Awaited<ReturnType<typeof getLiveSubmissions>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLiveSubmissions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getLiveSubmissions>>,
+          TError,
+          Awaited<ReturnType<typeof getLiveSubmissions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetLiveSubmissions<TData = Awaited<ReturnType<typeof getLiveSubmissions>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLiveSubmissions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetLiveSubmissions<TData = Awaited<ReturnType<typeof getLiveSubmissions>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getLiveSubmissions>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetLiveSubmissionsQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

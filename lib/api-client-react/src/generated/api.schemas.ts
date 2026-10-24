@@ -284,6 +284,39 @@ export interface LiveStats {
   demo: boolean;
 }
 
+export type LiveSubmissionsProductCounts = {
+  buying_carbon_credits: number;
+  consultancy_service: number;
+  listing_on_zerocarbon: number;
+};
+
+export interface LiveSubmissionSource {
+  source: string;
+  count: number;
+}
+
+export interface LiveSubmissionItem {
+  /** @nullable */
+  timestamp: string | null;
+  name: string;
+  product: string;
+  /** @nullable */
+  amount_inr: number | null;
+}
+
+export interface LiveSubmissions {
+  total_submissions: number;
+  total_amount_inr: number;
+  product_counts: LiveSubmissionsProductCounts;
+  /** @nullable */
+  average_satisfaction: number | null;
+  heard_about: LiveSubmissionSource[];
+  latest: LiveSubmissionItem[];
+  /** @nullable */
+  updated_at: string | null;
+  stale: boolean;
+}
+
 export type AdminRevenuePlanInterestCounts = {[key: string]: number};
 
 export interface AdminRevenue {

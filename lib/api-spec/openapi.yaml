@@ -226,6 +226,15 @@ paths:
           content:
             application/json:
               schema: {$ref: "#/components/schemas/LiveStats"}
+  /live/submissions:
+    get:
+      operationId: getLiveSubmissions
+      responses:
+        "200":
+          description: Privacy-safe summary of the external payment form
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/LiveSubmissions"}
   /visits:
     post:
       operationId: recordVisit
@@ -505,6 +514,42 @@ components:
         qr_visits: {type: integer}
         fees_earned_inr: {type: integer}
         demo: {type: boolean}
+    LiveSubmissions:
+      type: object
+      required: [total_submissions, total_amount_inr, product_counts, average_satisfaction, heard_about, latest, updated_at, stale]
+      properties:
+        total_submissions: {type: integer}
+        total_amount_inr: {type: number}
+        product_counts:
+          type: object
+          required: [buying_carbon_credits, consultancy_service, listing_on_zerocarbon]
+          properties:
+            buying_carbon_credits: {type: integer}
+            consultancy_service: {type: integer}
+            listing_on_zerocarbon: {type: integer}
+        average_satisfaction: {type: ["number", "null"]}
+        heard_about:
+          type: array
+          items: {$ref: "#/components/schemas/LiveSubmissionSource"}
+        latest:
+          type: array
+          items: {$ref: "#/components/schemas/LiveSubmissionItem"}
+        updated_at: {type: ["string", "null"]}
+        stale: {type: boolean}
+    LiveSubmissionSource:
+      type: object
+      required: [source, count]
+      properties:
+        source: {type: string}
+        count: {type: integer}
+    LiveSubmissionItem:
+      type: object
+      required: [timestamp, name, product, amount_inr]
+      properties:
+        timestamp: {type: ["string", "null"]}
+        name: {type: string}
+        product: {type: string}
+        amount_inr: {type: ["number", "null"]}
     AdminRevenue:
       type: object
       required: [fees_earned_inr, fees_pending_inr, completed_voluntary_orders, credit_value_traded_inr, plan_interest_counts]
