@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useSession } from '@/lib/session';
 import { checkedOnLabel, formatFeeRate, formatInr, formatPriceRange, pricing } from '@/lib/pricing';
 import { errMsg } from '@/lib/zc';
+import { LandReviewBooking } from '@/components/zc/land-review-booking';
 
 type Row = { service: string; price: string; payer: string; why: string };
 
@@ -112,6 +113,7 @@ export default function Pricing() {
           <p className="mt-2 text-lg font-bold tabular-nums">{x.price}</p>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{x.detail}</p>
           <p className="mt-3 text-sm leading-relaxed">{x.extra}</p>
+          {x.href === '/scan' && <div className="mt-4"><LandReviewBooking context="pricing" /></div>}
           <div className="mt-auto pt-5">{x.href ? <Link href={x.href} className="inline-flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-semibold hover:bg-secondary" data-testid="link-plan-scan">{x.cta}<ArrowRight className="h-4 w-4" /></Link> : <Button className="h-11 w-full text-sm" disabled={interest.isPending} onClick={() => record(x.plan!)} data-testid={`button-interest-${i}`}>{x.cta}</Button>}</div>
         </article>)}
       </section>

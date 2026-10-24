@@ -10,6 +10,7 @@
   "packages": {
     "landowner": {
       "price_inr": 0,
+      "land_review_inr": 299,
       "assisted_survey_inr": 499
     },
     "pool_starter": {
