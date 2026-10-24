@@ -1,4 +1,4 @@
-modules = ["nodejs-24", "python-base-3.13"]
+modules = ["nodejs-24", "python-base-3.13", "postgresql-16"]
 
 [deployment]
 router = "application"
@@ -18,3 +18,19 @@ expertMode = true
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 20000
+
+[userenv]
+
+[userenv.shared]
+AGENTICORG_BASE_URL = "https://agenticorg.hackathon.pinelabs.com"
+AGENT_ID_ASK_ZEROCARBON = "8eea09d1-05da-4436-9069-a1f22c8fe88e"
+AGENT_ID_CERTIFICATE_WRITER = "1eb5f4f4-2d0e-40e3-aed8-acf0fd69510d"
+AGENT_ID_CLAIM_CHECKER = "27783acc-b678-483a-b0cb-1528b4c55c3d"
+AGENT_ID_COMPLIANCE_GUARD = "91f6f6dc-c209-4fc3-9b5b-d58860467786"
+AGENT_ID_LAND_SCOUT = "7e80e8f6-036d-4ec4-8016-1c43df7d831a"
+AGENT_ID_LISTING_MATCHER = "4a953991-98ef-4b2b-a0a6-bd944fc37b63"
+AGENT_ID_NEED_INTERPRETER = "99f607c7-6b76-402d-9aa7-a1b4f37dffe2"
+AGENT_ID_ORDER_CONCIERGE = "f675e0eb-0c85-48d5-adcd-423fe0698f6a"
+
+[nix]
+channel = "stable-25_05"

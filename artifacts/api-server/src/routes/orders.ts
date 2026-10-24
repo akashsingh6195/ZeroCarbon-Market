@@ -26,10 +26,14 @@ router.post("/claim-check", async (req, res) => {
   let allowed_wording = defaultClaim(listing, data.quantity_t), fallback = true;
   let flags = blockedPhrases(data.claim_text);
   try {
-    const result = await agenticorg.run("CLAIM_CHECKER", { ...data, listing, demo: true }, org?.id);
-    if (typeof result.allowed_wording !== "string" || !Array.isArray(result.flagged_phrases)) throw new Error("Invalid claim result");
+    const result = await agenticorg.run("CLAIM_CHECKER", {
+      planned_claim: data.claim_text,
+      credits: data.quantity_t,
+      company_emissions_t: null,
+    }, org?.id);
+    if (typeof result.allowed_wording !== "string" || !Array.isArray(result.flagged)) throw new Error("Invalid claim result");
     allowed_wording = await guard(result.allowed_wording, "claim-check", "Buyer", org?.id);
-    flags = [...new Set([...flags, ...result.flagged_phrases.filter((x): x is string => typeof x === "string")])];
+    flags = [...new Set([...flags, ...(Array.isArray(result.flagged) ? result.flagged.filter((x): x is string => typeof x === "string") : [])])];
     fallback = false;
   } catch { /* Use the specified fixed factual template. */ }
   res.json(CheckClaimResponse.parse({ allowed_wording, flagged_phrases: flags, fallback }));
@@ -101,10 +105,10 @@ router.post("/orders/:id/question", async (req, res) => {
   const [row] = await db.select().from(ordersTable).where(and(eq(ordersTable.id, params.data.id), eq(ordersTable.org_id, org.id)));
   if (!row) { res.status(404).json({ error: "Order not found." }); return; }
   try {
-    const result = await agenticorg.run("ORDER_CONCIERGE", { question: input.data.question, order: publicOrder(row) }, org.id);
-    if (typeof result.answer !== "string") throw new Error("Invalid answer");
-    if (result.escalate === true) await event("escalation", org.id, { order_id: row.id, question: input.data.question });
-    res.json(AskOrderResponse.parse({ answer: await guard(result.answer, "order", org.roles.join(","), org.id), see_screen: `/orders/${row.id}`, escalate: result.escalate === true, available: true }));
+    const result = await agenticorg.run("ORDER_CONCIERGE", { order: publicOrder(row), question: input.data.question }, org.id);
+    if (typeof result.reply !== "string" || typeof result.escalate !== "boolean") throw new Error("Invalid concierge result");
+    if (result.escalate) await event("escalation", org.id, { order_id: row.id, question: input.data.question, problem_type: result.problem_type });
+    res.json(AskOrderResponse.parse({ answer: await guard(result.reply, "order", org.roles.join(","), org.id), see_screen: `/orders/${row.id}`, escalate: result.escalate, available: true }));
   } catch {
     await event("escalation", org.id, { order_id: row.id, question: input.data.question, reason: "concierge_unavailable" });
     res.json(AskOrderResponse.parse({ answer: "Our assistant is busy. Your question has been saved for the team to review.", see_screen: `/orders/${row.id}`, escalate: true, available: false }));

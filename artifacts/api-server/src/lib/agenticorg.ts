@@ -7,12 +7,49 @@ import { logger } from "./logger";
 
 const contractsDir = path.resolve(process.cwd(), "../../shared/contracts");
 const ajv = new Ajv({ allErrors: true, strict: false });
-const cache = new Map<string, { until: number; value: Record<string, unknown> }>();
-const contractNames: Record<string, string> = {
-  NEED_INTERPRETER: "NeedInterpretation", LISTING_MATCHER: "ListingMatches",
-  CLAIM_CHECKER: "ClaimCheck", CERTIFICATE_WRITER: "CertificateText",
-  ORDER_CONCIERGE: "ConciergeAnswer", LAND_SCOUT: "LandScout",
-  ASK_ZEROCARBON: "AskAnswer", COMPLIANCE_GUARD: "GuardResult",
+const cache = new Map<string, { until: number; value: AgentOutput; confidence: number | string | null }>();
+const agentNames = [
+  "NEED_INTERPRETER", "LISTING_MATCHER", "CLAIM_CHECKER", "CERTIFICATE_WRITER",
+  "ORDER_CONCIERGE", "LAND_SCOUT", "ASK_ZEROCARBON", "COMPLIANCE_GUARD",
+] as const;
+type AgentName = typeof agentNames[number];
+type AgentOutput = Record<string, unknown> & { demo: true };
+type AgentStatus = "completed" | "failed" | "hitl_triggered" | "budget_exceeded";
+type Confidence = number | string | null;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+const has = (value: Record<string, unknown>, key: string) => Object.prototype.hasOwnProperty.call(value, key);
+const isString = (value: unknown): value is string => typeof value === "string";
+const isStringList = (value: unknown) => Array.isArray(value) && value.every(isString);
+const isTextOrTextList = (value: unknown) => isString(value) || isStringList(value);
+
+const outputIsValid: Record<AgentName, (value: Record<string, unknown>) => boolean> = {
+  NEED_INTERPRETER: value =>
+    isRecord(value.filters) && isString(value.understood) &&
+    has(value, "unclear"),
+  LISTING_MATCHER: value =>
+    Array.isArray(value.results) &&
+    value.results.every(item => isRecord(item) && Number.isInteger(item.listing_id) &&
+      typeof item.rank === "number" && Number.isFinite(item.rank) && isString(item.why)) &&
+    has(value, "relaxed"),
+  CLAIM_CHECKER: value => isString(value.allowed_wording) && isStringList(value.flagged),
+  CERTIFICATE_WRITER: value =>
+    isString(value.headline) && isString(value.body) &&
+    value.footer === "Demo data. Not a real retirement.",
+  ORDER_CONCIERGE: value =>
+    isString(value.reply) && typeof value.escalate === "boolean" && has(value, "problem_type"),
+  LAND_SCOUT: value =>
+    isString(value.headline) && isTextOrTextList(value.why) &&
+    (isTextOrTextList(value.what_to_plant) || value.what_to_plant === null) &&
+    (isString(value.credits_line) || value.credits_line === null) &&
+    (isString(value.money_line) || value.money_line === null) &&
+    isString(value.next_step) &&
+    (isTextOrTextList(value.cannot_see) || value.cannot_see === null),
+  ASK_ZEROCARBON: value =>
+    isString(value.answer) && isString(value.see_screen) && typeof value.refused === "boolean",
+  COMPLIANCE_GUARD: value =>
+    typeof value.pass === "boolean" && isString(value.fixed_text) && has(value, "issues"),
 };
 
 export class IntegrationUnavailable extends Error {}
@@ -22,15 +59,13 @@ async function loadJson(file: string) {
   catch { throw new IntegrationUnavailable("Shared service contracts have not been supplied."); }
 }
 
-// Transport details are loaded ONLY from an explicitly docs-confirmed configuration.
-// No request body or response envelope is guessed from an undocumented provider.
-async function transport() {
-  const config = await loadJson("agenticorg-transport.json");
-  if (config.docs_confirmed !== true || typeof config.input_field !== "string" ||
-      typeof config.response_field !== "string" || !["", "input", "data", "payload"].includes(config.input_field)) {
-    throw new IntegrationUnavailable("AgenticOrg /docs transport confirmation is required.");
+function parseOutput(value: unknown): Record<string, unknown> {
+  if (typeof value === "string") {
+    const json = value.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim();
+    value = JSON.parse(json);
   }
-  return config as { input_field: string; response_field: string; docs_confirmed: boolean };
+  if (!isRecord(value)) throw new IntegrationUnavailable("AgenticOrg output was not a JSON object.");
+  return value;
 }
 
 export async function validateContract(name: string, value: unknown) {
@@ -41,54 +76,103 @@ export async function validateContract(name: string, value: unknown) {
   return value as Record<string, unknown>;
 }
 
-// All provider-specific behavior lives here. Every attempt, including cache hits, is audited.
+function validAgentName(value: string): value is AgentName {
+  return (agentNames as readonly string[]).includes(value);
+}
+
+function validConfidence(value: unknown): value is Confidence {
+  return value === null || typeof value === "string" ||
+    (typeof value === "number" && Number.isFinite(value));
+}
+
+function isAgentStatus(value: unknown): value is AgentStatus {
+  return value === "completed" || value === "failed" ||
+    value === "hitl_triggered" || value === "budget_exceeded";
+}
+
+// AgenticOrg's email-confirmed API contract; UUIDs are supplied through configuration.
 export const agenticorg = {
-  async run(agentName: string, input: Record<string, unknown>, orgId: string | null = null, timeoutMs = 12000) {
+  async run(agentName: AgentName, input: Record<string, unknown>, orgId: string | null = null) {
     const started = Date.now();
-    let result = "failed", failure = "unavailable";
+    let status = "unconfigured";
+    let confidence: Confidence = null;
+    let outcome = "fallback";
+    let httpStatus: number | undefined;
     try {
+      if (!validAgentName(agentName)) {
+        status = "invalid_agent";
+        throw new IntegrationUnavailable("Unknown AgenticOrg agent.");
+      }
       const base = process.env.AGENTICORG_BASE_URL;
       const key = process.env.AGENTICORG_API_KEY;
       const id = process.env[`AGENT_ID_${agentName}`];
       if (!base || !key || !id) throw new IntegrationUnavailable("AgenticOrg is not connected.");
-      const config = await transport();
-      const name = contractNames[agentName];
-      if (!name) throw new IntegrationUnavailable("Unknown agent contract.");
-      // Load/compile before sending anything to an external service.
-      await loadJson(`${name}.json`);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        status = "invalid_agent_id";
+        throw new IntegrationUnavailable("AgenticOrg requires a configured agent UUID.");
+      }
       const cacheKey = createHash("sha256").update(JSON.stringify([orgId, agentName, input])).digest("hex");
       const cached = cache.get(cacheKey);
-      if (cached && cached.until > Date.now()) { result = "cached"; return cached.value; }
+      if (cached && cached.until > Date.now()) {
+        status = "completed";
+        outcome = "cached";
+        confidence = cached.confidence;
+        return cached.value;
+      }
       const url = new URL(`/api/v1/agents/${encodeURIComponent(id)}/run`, base);
       if (url.protocol !== "https:" && url.hostname !== "localhost") throw new IntegrationUnavailable("AgenticOrg must use HTTPS.");
-      const body = config.input_field ? { [config.input_field]: input } : input;
+      const body = { action: "process", inputs: input, context: {} };
       const response = await fetch(url, {
         method: "POST", headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs),
+        body: JSON.stringify(body), signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) {
-        failure = `http_${response.status}`;
+        status = "http_error";
+        httpStatus = response.status;
         throw new IntegrationUnavailable("AgenticOrg request failed.");
       }
-      const raw: unknown = await response.json();
-      let value: unknown = raw;
-      if (config.response_field) for (const key of config.response_field.split(".")) {
-        value = value !== null && typeof value === "object" ? (value as Record<string, unknown>)[key] : undefined;
+      let envelope: unknown;
+      try {
+        envelope = await response.json();
+      } catch {
+        status = "invalid_response";
+        throw new IntegrationUnavailable("AgenticOrg returned invalid JSON.");
       }
-      if (typeof value === "string") value = JSON.parse(value);
-      const validated = await validateContract(name, value);
+      if (!isRecord(envelope) || !isAgentStatus(envelope.status) ||
+          !has(envelope, "confidence") || !validConfidence(envelope.confidence) ||
+          !has(envelope, "output")) {
+        status = "invalid_response";
+        throw new IntegrationUnavailable("AgenticOrg response did not match its confirmed envelope.");
+      }
+      status = envelope.status;
+      confidence = envelope.confidence;
+      if (status !== "completed") {
+        throw new IntegrationUnavailable(`AgenticOrg agent status: ${status}.`);
+      }
+      let output: Record<string, unknown>;
+      try {
+        output = parseOutput(envelope.output);
+      } catch {
+        status = "invalid_output";
+        throw new IntegrationUnavailable("AgenticOrg output was not valid JSON.");
+      }
+      if (output.demo !== true || !outputIsValid[agentName](output)) {
+        status = "invalid_output";
+        throw new IntegrationUnavailable("AgenticOrg output failed its required field checks.");
+      }
+      const validated = output as AgentOutput;
       if (cache.size > 500) cache.clear();
-      cache.set(cacheKey, { until: Date.now() + 600000, value: validated });
-      result = "success";
+      cache.set(cacheKey, { until: Date.now() + 600000, value: validated, confidence });
+      outcome = "success";
       return validated;
     } catch (error) {
-      if (error instanceof Error && error.name === "TimeoutError") failure = "timeout";
-      else if (error instanceof IntegrationUnavailable) failure = error.message;
+      if (error instanceof Error && error.name === "TimeoutError") status = "timeout";
+      else if (!(error instanceof IntegrationUnavailable) && status === "unconfigured") status = "failed";
       throw error;
     } finally {
       await event("agent_call", orgId, {
-        agent: agentName, duration_ms: Date.now() - started, result,
-        ...(result === "failed" ? { failure } : {}),
+        agent: agentName, status, confidence, duration_ms: Date.now() - started, outcome,
+        ...(httpStatus === undefined ? {} : { http_status: httpStatus }),
       }).catch((err) => logger.error({ err }, "Could not record agent audit"));
     }
   },
@@ -100,7 +184,7 @@ const blockedText = "This text could not be checked. Please use factual credit d
 
 export async function guard(text: string, screen: string, role: string, orgId: string | null = null) {
   try {
-    const result = await agenticorg.run("COMPLIANCE_GUARD", { text, screen, role }, orgId, 8000);
+    const result = await agenticorg.run("COMPLIANCE_GUARD", { text, screen, role }, orgId);
     if (typeof result.fixed_text !== "string") return blockedText;
     // Apply local safety even when upstream incorrectly marks its output as safe.
     return blockedPhrases(result.fixed_text).length ? blockedText : result.fixed_text;
@@ -108,7 +192,11 @@ export async function guard(text: string, screen: string, role: string, orgId: s
 }
 
 export function integrationStatus() {
-  const agent = !!(process.env.AGENTICORG_BASE_URL && process.env.AGENTICORG_API_KEY);
+  const agent = !process.env.AGENTICORG_BASE_URL
+    ? "not configured"
+    : !process.env.AGENTICORG_API_KEY
+      ? "configured; API key missing, agent calls use fallbacks"
+      : "connected";
   const model = !!(process.env.MODELS_API_URL && process.env.MODELS_API_KEY);
-  return `AgenticOrg: ${agent ? "configured; shared contracts and /docs confirmation required" : "not connected"}. Land models: ${model ? "configured; shared ScanResult contract required" : "not connected"}. Payments: demo only.`;
+  return `AgenticOrg: ${agent}. Land models: ${model ? "configured; ScanResult checked against shared schema" : "not connected"}. Payments: demo only.`;
 }

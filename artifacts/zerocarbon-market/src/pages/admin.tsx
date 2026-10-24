@@ -19,16 +19,23 @@ function pick(p: Record<string, unknown>, keys: string[]) {
 }
 
 function agentStats(events: ZEvent[]) {
-  const m = new Map<string, { n: number; fails: number; total: number; max: number }>();
+  const m = new Map<string, { n: number; fails: number; total: number; max: number; lastStatus: string; confidence: string }>();
   for (const e of events) {
     const p = e.payload ?? {};
     const agent = pick(p, ['agent', 'agent_name', 'agent_id', 'service']);
     const dur = Number(pick(p, ['duration_ms', 'ms', 'elapsed_ms', 'duration']));
-    if (!agent || !Number.isFinite(dur)) continue;
-    const st = String(pick(p, ['status', 'result', 'outcome']) ?? '').toLowerCase();
-    const failed = p.ok === false || p.success === false || ['fail', 'failed', 'error', 'timeout', 'invalid'].some((x) => st.includes(x));
-    const cur = m.get(String(agent)) ?? { n: 0, fails: 0, total: 0, max: 0 };
-    cur.n++; cur.total += dur; cur.max = Math.max(cur.max, dur); if (failed) cur.fails++;
+    if (!agent) continue;
+    const status = String(pick(p, ['status', 'result', 'outcome']) ?? 'unknown');
+    const st = status.toLowerCase();
+    const failed = p.ok === false || p.success === false || p.outcome === 'fallback' ||
+      ['fail', 'failed', 'error', 'timeout', 'invalid', 'hitl', 'budget', 'unconfigured'].some((x) => st.includes(x));
+    const cur = m.get(String(agent)) ?? {
+      n: 0, fails: 0, total: 0, max: 0, lastStatus: status,
+      confidence: p.confidence == null ? '—' : String(p.confidence),
+    };
+    cur.n++;
+    if (Number.isFinite(dur)) { cur.total += dur; cur.max = Math.max(cur.max, dur); }
+    if (failed) cur.fails++;
     m.set(String(agent), cur);
   }
   return [...m.entries()].sort((a, b) => b[1].max - a[1].max);
@@ -88,10 +95,10 @@ export default function Admin() {
               <h2 className="mb-3 font-semibold">Agent call times and failures</h2>
               {agents.length === 0 ? <p className="text-sm text-muted-foreground">No agent calls logged yet.</p> : (
                 <div className="overflow-x-auto rounded-xl border bg-card">
-                  <table className="w-full min-w-[480px] text-sm">
-                    <thead className="text-left text-xs text-muted-foreground"><tr><th className="p-3">Agent</th><th className="p-3">Calls</th><th className="p-3">Avg ms</th><th className="p-3">Slowest ms</th><th className="p-3">Failures</th></tr></thead>
+                  <table className="w-full min-w-[640px] text-sm">
+                    <thead className="text-left text-xs text-muted-foreground"><tr><th className="p-3">Agent</th><th className="p-3">Calls</th><th className="p-3">Last status</th><th className="p-3">Confidence</th><th className="p-3">Avg ms</th><th className="p-3">Slowest ms</th><th className="p-3">Failures</th></tr></thead>
                     <tbody>{agents.map(([a, s]) => (
-                      <tr key={a} className="border-t" data-testid={`row-agent-${a}`}><td className="p-3 font-mono text-xs">{a}</td><td className="p-3">{s.n}</td><td className="p-3">{Math.round(s.total / s.n)}</td><td className="p-3 font-semibold">{Math.round(s.max)}</td><td className={`p-3 ${s.fails ? 'font-semibold text-destructive' : ''}`}>{s.fails}</td></tr>
+                      <tr key={a} className="border-t" data-testid={`row-agent-${a}`}><td className="p-3 font-mono text-xs">{a}</td><td className="p-3">{s.n}</td><td className="p-3">{s.lastStatus}</td><td className="p-3">{s.confidence}</td><td className="p-3">{s.n ? Math.round(s.total / s.n) : 0}</td><td className="p-3 font-semibold">{Math.round(s.max)}</td><td className={`p-3 ${s.fails ? 'font-semibold text-destructive' : ''}`}>{s.fails}</td></tr>
                     ))}</tbody>
                   </table>
                 </div>

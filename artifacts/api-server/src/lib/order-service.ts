@@ -1,4 +1,4 @@
-import { db, ordersTable, eventsTable, type OrderRow, type ListingRow } from "@workspace/db";
+import { db, ordersTable, eventsTable, organisationsTable, type OrderRow, type ListingRow } from "@workspace/db";
 import { and, eq, lt, inArray } from "drizzle-orm";
 import { defaultClaim } from "./market";
 import { agenticorg, guard } from "./agenticorg";
@@ -14,7 +14,7 @@ export function certificateFor(row: OrderRow) {
   return {
     token: row.certificate_token, project_name: listing.project_name,
     tonnes: row.quantity_t, vintage: listing.vintage,
-    text: defaultClaim(listing, row.quantity_t),
+    text: `${defaultClaim(listing, row.quantity_t)}\n\nDemo data. Not a real retirement.`,
     serial_numbers: [`DEMO-ZC-${row.id.slice(0, 8).toUpperCase()}-001`],
     issued_at: new Date(row.created_at.getTime() + 15000).toISOString(), demo: true,
   };
@@ -61,11 +61,24 @@ export async function writeCertificate(row: OrderRow) {
   const fixed = certificateFor(row);
   let text = fixed.text;
   try {
+    if (!row.org_id) throw new Error("Certificate buyer is unavailable");
+    const [buyer] = await db.select({ name: organisationsTable.name }).from(organisationsTable)
+      .where(eq(organisationsTable.id, row.org_id));
+    if (!buyer) throw new Error("Certificate buyer is unavailable");
+    const listing = row.listing_snapshot as unknown as ListingRow;
     const result = await agenticorg.run("CERTIFICATE_WRITER", {
-      project: fixed.project_name, tonnes: fixed.tonnes, vintage: fixed.vintage,
-      serial_numbers: fixed.serial_numbers, demo: true,
+      buyer_name: buyer.name,
+      quantity_t: fixed.tonnes,
+      project: fixed.project_name,
+      action: listing.action,
+      vintage: fixed.vintage,
+      serials: fixed.serial_numbers,
+      retired_on: new Date(row.created_at.getTime() + 12000).toISOString(),
     }, row.org_id);
-    if (typeof result.text === "string") text = await guard(result.text, "certificate", "Buyer", row.org_id);
+    if (typeof result.headline !== "string" || typeof result.body !== "string" ||
+        result.footer !== "Demo data. Not a real retirement.") throw new Error("Certificate output is invalid");
+    const verifiedCopy = await guard(`${result.headline}\n\n${result.body}`, "certificate", "Buyer", row.org_id);
+    text = `${verifiedCopy}\n\n${result.footer}`;
   } catch { /* The fixed, clearly labelled demo certificate is the specified fallback. */ }
   await db.update(ordersTable).set({ certificate_json: { ...fixed, text } }).where(eq(ordersTable.id, row.id));
 }

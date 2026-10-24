@@ -1,35 +1,43 @@
-# Service contracts — required before live service calls
+# Shared service contracts
 
-The uploaded setup refers to `00-shared/contracts.md` and JSON schemas from
-`zerocarbon-models/contracts/*.json`; neither was supplied.
-No provider response is fabricated in their absence.
+## AgenticOrg
 
-Copy the original shared contracts here before connecting AgenticOrg or models.
-The server validates service output with JSON Schema and fails explicitly when
-the contract or connection is absent.
+The AgenticOrg transport was confirmed by the hackathon organisers on 24 October
+2026. Its request is:
 
-Agent output schema names expected by the adapter:
-`NeedInterpretation.json`, `ListingMatches.json`, `ClaimCheck.json`,
-`CertificateText.json`, `ConciergeAnswer.json`, `LandScout.json`,
-`AskAnswer.json`, `GuardResult.json`. Models: `ScanResult.json`.
-If upstream filenames differ, update the mapping in the adapter to the supplied
-names, rather than rewriting or inventing the actual upstream schemas.
+```json
+{
+  "action": "process",
+  "inputs": {},
+  "context": {}
+}
+```
 
-Once the actual AgenticOrg instance's `/docs` has been inspected, add
-`agenticorg-transport.json` with `docs_confirmed: true`, `input_field`
-(the documented body wrapper key, or empty string for a direct input body) and
-`response_field` (documented dotted JSON path, or empty string for direct JSON).
-Keep all transport knowledge in the server helper. Do not mark it confirmed
-until the actual instance docs have been checked.
+The server calls `POST /api/v1/agents/{AGENT_UUID}/run` with a Bearer
+`AGENTICORG_API_KEY` and `Content-Type: application/json`. Responses contain
+`status`, `confidence`, and `output`. Only `completed` output is considered;
+other statuses, timeouts, HTTP errors, and invalid output use each feature's
+existing fallback. String outputs may be JSON in Markdown code fences.
 
-Required configuration (server-only):
-AGENTICORG_BASE_URL, AGENTICORG_API_KEY, AGENT_ID_NEED_INTERPRETER,
-AGENT_ID_LISTING_MATCHER, AGENT_ID_CLAIM_CHECKER,
-AGENT_ID_CERTIFICATE_WRITER, AGENT_ID_ORDER_CONCIERGE,
-AGENT_ID_LAND_SCOUT, AGENT_ID_ASK_ZEROCARBON,
-AGENT_ID_COMPLIANCE_GUARD, MODELS_API_URL, MODELS_API_KEY,
-INTERNAL_KEY, ADMIN_PIN, SESSION_SECRET.
+Each agent output must also include `demo: true` and these fields:
 
-With missing services, filters and demo buying remain usable. Scan and chat
-show explicit unavailability; the claim/certificate fixed templates are
-deliberately labelled demo. ADMIN_PIN and INTERNAL_KEY fail closed if absent.
+- Need Interpreter: `filters`, `understood`, `unclear`
+- Listing Matcher: `results` (`listing_id`, `rank`, `why`), `relaxed`
+- Claim Checker: `allowed_wording`, `flagged`
+- Certificate Writer: `headline`, `body`, `footer`
+- Order Concierge: `reply`, `escalate`, `problem_type`
+- Land Scout: `headline`, `why`, `what_to_plant`, `credits_line`,
+  `money_line`, `next_step`, `cannot_see`
+- Ask ZeroCarbon: `answer`, `see_screen`, `refused`
+- Compliance Guard: `pass`, `fixed_text`, `issues`
+
+`AGENTICORG_BASE_URL` and the `AGENT_ID_*` UUIDs are ordinary shared
+configurations. `AGENTICORG_API_KEY` is a secret; if absent, calls immediately
+use local fallbacks. Calls have a 15-second limit, no retries, and identical
+requests are cached for ten minutes.
+
+## Land models
+
+`ScanResult.json` is the required JSON Schema for the response from
+`MODELS_API_URL/scan`. Keep validating the models response against that schema
+before constructing a card or passing it to Land Scout.

@@ -49,10 +49,10 @@ router.post("/need", async (req, res) => {
     const matches = await agenticorg.run("LISTING_MATCHER", {
       filters, buyer_type: org?.roles.includes("Trader") ? "trader_voluntary_only" : org?.buyer_type ?? "voluntary",
     }, org?.id);
-    if (!Array.isArray(matches.ranked) || typeof interpreted.understood !== "string") throw new Error("Invalid result");
+    if (!Array.isArray(matches.results) || typeof interpreted.understood !== "string") throw new Error("Invalid result");
     const visible = await visibleListings(org, filters);
     const ranked = [];
-    for (const match of matches.ranked as { listing_id: number; why: string }[]) {
+    for (const match of [...matches.results as { listing_id: number; rank: number; why: string }[]].sort((a, b) => a.rank - b.rank)) {
       const listing = visible.find(l => l.id === match.listing_id);
       if (listing && typeof match.why === "string") ranked.push({
         listing, why: await guard(match.why, "market", org?.roles.join(",") ?? "Visitor", org?.id),

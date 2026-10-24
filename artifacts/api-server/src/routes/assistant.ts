@@ -134,21 +134,33 @@ router.post("/scan", async (req, res) => {
       throw err;
     }
     let card: Record<string, unknown> | null = null;
-    try { card = await agenticorg.run("LAND_SCOUT", { ...data, scan: raw }, org?.id); } catch { /* Use the deterministic ScanResult card. */ }
+    try {
+      card = await agenticorg.run("LAND_SCOUT", {
+        lat: data.lat, lon: data.lon, boundary_geojson: data.boundary_geojson ?? null,
+      }, org?.id);
+    } catch { /* Use the deterministic ScanResult card. */ }
     if (!card) {
       res.json(ScanLandResponse.parse({ available: true, message: "", ...fallbackScanCard(raw) }));
       return;
     }
     const guarded = async (value: unknown, fixed: string) => guard(typeof value === "string" ? value : fixed, "scan", org?.roles.join(",") ?? "Seller", org?.id);
+    const why = Array.isArray(card.why) ? card.why.filter((x): x is string => typeof x === "string") :
+      typeof card.why === "string" ? [card.why] : [];
+    const cannotSee = Array.isArray(card.cannot_see) ? card.cannot_see.filter((x): x is string => typeof x === "string").join("\n") :
+      typeof card.cannot_see === "string" ? card.cannot_see : "";
+    const whatToPlant = Array.isArray(card.what_to_plant) ? card.what_to_plant.filter((x): x is string => typeof x === "string").join("\n") :
+      typeof card.what_to_plant === "string" ? card.what_to_plant : "";
+    const creditsLine = typeof card.credits_line === "string" && hasRange(card.credits_line) ? card.credits_line : "";
+    const moneyLine = typeof card.money_line === "string" && hasRange(card.money_line) ? card.money_line : "";
     res.json(ScanLandResponse.parse({
       available: true, message: "",
       headline: await guarded(card.headline, "Your demo land scan is ready"),
-      reasons: await Promise.all((Array.isArray(card.reasons) ? card.reasons.filter((x): x is string => typeof x === "string").slice(0, 3) : ["A field assessment is needed to confirm suitability."]).map(x => guarded(x, ""))),
-      what_to_plant: await guarded(card.what_to_plant, "Discuss suitable species with a local field team."),
-      credits_line: await guarded(hasRange(card.credits_line) ? card.credits_line : undefined, "A reliable credit range is not available from this scan."),
-      money_line: await guarded(hasRange(card.money_line) ? card.money_line : undefined, "A reliable money range is not available from this scan."),
+      reasons: await Promise.all(why.filter(x => x.trim()).slice(0, 3).map(x => guarded(x, ""))),
       next_step: await guarded(card.next_step, "Arrange an on-site assessment before making a decision."),
-      limitations: await guarded(card.limitations, "Satellites cannot confirm ownership, soil suitability, water access or eligibility. A person needs to check these."),
+      ...(whatToPlant.trim() ? { what_to_plant: await guarded(whatToPlant, "") } : {}),
+      ...(creditsLine ? { credits_line: await guarded(creditsLine, "") } : {}),
+      ...(moneyLine ? { money_line: await guarded(moneyLine, "") } : {}),
+      ...(cannotSee.trim() ? { limitations: await guarded(cannotSee, "") } : {}),
     }));
   } catch {
     res.json(ScanLandResponse.parse({ available: false, message: "Scan is busy, try again in a minute" }));
