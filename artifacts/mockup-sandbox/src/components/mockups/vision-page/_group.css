@@ -1,0 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@500&display=swap');
+:root { --forest: 147 50% 24%; --leaf: 100 37% 50%; --marigold: 36 80% 57%; --paper: 47 41% 95%; --ink: 154 11% 13%; --app-font-sans: 'DM Sans', system-ui, sans-serif; --app-font-serif: 'Fraunces', Georgia, serif; --app-font-mono: 'JetBrains Mono', ui-monospace, monospace; }
+body { margin: 0; background: hsl(var(--paper)); font-family: var(--app-font-sans); }
+.font-display { font-family: var(--app-font-serif); letter-spacing: -0.02em; }
+.font-mono { font-family: var(--app-font-mono); }
