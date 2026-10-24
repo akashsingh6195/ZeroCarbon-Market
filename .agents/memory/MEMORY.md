@@ -1,2 +1,3 @@
 - [Revenue principles](revenue-principles.md) — proposed launch pricing, farmer protections, seller-side completion fees, and demo-only plan interest.
 - [Brand identity](brand-identity.md) — use the user's supplied green C, leaf, and coins logo for ZeroCarbon Market.
+- [Assistant latency constraints](assistant-latency.md) — avoid per-field remote guard calls in Scan and need results; keep deterministic fallbacks independent.

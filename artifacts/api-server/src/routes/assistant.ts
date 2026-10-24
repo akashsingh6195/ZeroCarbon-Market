@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { AskZeroCarbonBody, AskZeroCarbonResponse, ScanLandBody, ScanLandResponse } from "@workspace/api-zod";
 import { organisation } from "../lib/session";
-import { agenticorg, guard, blockedPhrases, validateContract } from "../lib/agenticorg";
+import { agenticorg, guard, guardLocally, blockedPhrases, validateContract } from "../lib/agenticorg";
 import { event } from "../lib/events";
 
 const router = Router();
@@ -126,24 +126,23 @@ router.post("/scan", async (req, res) => {
     let raw: Record<string, unknown>;
     try {
       const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": key }, body: JSON.stringify(data), signal: AbortSignal.timeout(12000) });
-      if (!response.ok) throw new Error("Models service failed");
+      if (!response.ok) throw new Error(`Models service HTTP ${response.status}`);
       raw = await validateContract("ScanResult", await response.json());
-      await event("model_call", org?.id ?? null, { model: "scan", duration_ms: Date.now() - started, result: "success" });
+      await event("model_call", org?.id ?? null, { model: "scan", duration_ms: Date.now() - started, result: "success" })
+        .catch(() => req.log.warn("Could not record successful model call"));
     } catch (err) {
+      req.log.warn({ reason: err instanceof Error ? err.message : "Unknown scan error" }, "Scan models response failed");
       await event("model_call", org?.id ?? null, { model: "scan", duration_ms: Date.now() - started, result: "failed" });
       throw err;
     }
-    let card: Record<string, unknown> | null = null;
+    const fallback = ScanLandResponse.parse({ available: true, message: "", verdict: raw.verdict, ...fallbackScanCard(raw) });
     try {
-      card = await agenticorg.run("LAND_SCOUT", {
+    const card = await agenticorg.run("LAND_SCOUT", {
+        task: "Explain this ZeroCarbon Scan result for the landowner.",
         lat: data.lat, lon: data.lon, boundary_geojson: data.boundary_geojson ?? null,
       }, org?.id);
-    } catch { /* Use the deterministic ScanResult card. */ }
-    if (!card) {
-      res.json(ScanLandResponse.parse({ available: true, message: "", verdict: raw.verdict, ...fallbackScanCard(raw) }));
-      return;
-    }
-    const guarded = async (value: unknown, fixed: string) => guard(typeof value === "string" ? value : fixed, "scan", org?.roles.join(",") ?? "Seller", org?.id);
+    // Keep this to one agent call; apply the existing local claim-safety check.
+    const guarded = async (value: unknown, fixed: string) => guardLocally(typeof value === "string" ? value : fixed);
     const why = Array.isArray(card.why) ? card.why.filter((x): x is string => typeof x === "string") :
       typeof card.why === "string" ? [card.why] : [];
     const cannotSee = Array.isArray(card.cannot_see) ? card.cannot_see.filter((x): x is string => typeof x === "string").join("\n") :
@@ -162,7 +161,12 @@ router.post("/scan", async (req, res) => {
       ...(moneyLine ? { money_line: await guarded(moneyLine, "") } : {}),
       ...(cannotSee.trim() ? { limitations: await guarded(cannotSee, "") } : {}),
     }));
-  } catch {
+    } catch {
+      req.log.info("Land Scout card unavailable; using validated ScanResult");
+      res.json(fallback);
+    }
+  } catch (err) {
+    req.log.warn({ reason: err instanceof Error ? err.message : "Unknown scan error" }, "Scan unavailable");
     res.json(ScanLandResponse.parse({ available: false, message: "Scan is busy, try again in a minute" }));
   }
 });

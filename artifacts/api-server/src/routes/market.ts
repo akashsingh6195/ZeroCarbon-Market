@@ -7,7 +7,8 @@ import {
 import { eq } from "drizzle-orm";
 import { organisation, secretEqual } from "../lib/session";
 import { visibleListings, visibleListing } from "../lib/market";
-import { agenticorg, guard } from "../lib/agenticorg";
+import { agenticorg, guardLocally } from "../lib/agenticorg";
+import { normalizeNeedFilters } from "../lib/need-filters";
 
 const router = Router();
 router.get("/listings", async (req, res) => {
@@ -45,21 +46,26 @@ router.post("/need", async (req, res) => {
   const org = await organisation(req);
   try {
     const interpreted = await agenticorg.run("NEED_INTERPRETER", { sentence: parsed.data.sentence }, org?.id);
-    const filters = GetListingsQueryParams.parse(interpreted.filters);
-    const matches = await agenticorg.run("LISTING_MATCHER", {
-      filters, buyer_type: org?.roles.includes("Trader") ? "trader_voluntary_only" : org?.buyer_type ?? "voluntary",
-    }, org?.id);
-    if (!Array.isArray(matches.results) || typeof interpreted.understood !== "string") throw new Error("Invalid result");
+    const filters = GetListingsQueryParams.parse(normalizeNeedFilters(interpreted.filters as Record<string, unknown>));
     const visible = await visibleListings(org, filters);
-    const ranked = [];
-    for (const match of [...matches.results as { listing_id: number; rank: number; why: string }[]].sort((a, b) => a.rank - b.rank)) {
-      const listing = visible.find(l => l.id === match.listing_id);
-      if (listing && typeof match.why === "string") ranked.push({
-        listing, why: await guard(match.why, "market", org?.roles.join(",") ?? "Visitor", org?.id),
+    let ranked = visible.map(listing => ({ listing, why: "Matches your requested filters." }));
+    try {
+      const matches = await agenticorg.run("LISTING_MATCHER", {
+        filters, buyer_type: org?.roles.includes("Trader") ? "trader_voluntary_only" : org?.buyer_type ?? "voluntary",
+      }, org?.id);
+      const results = matches.results as { listing_id: number; rank: number; why: string }[];
+      const matched = [...results].sort((a, b) => a.rank - b.rank).flatMap(match => {
+        const listing = visible.find(l => l.id === match.listing_id);
+        return listing ? [{ listing, why: guardLocally(match.why) }] : [];
       });
+      // Do not hide valid filtered listings when the ranking agent omits them.
+      ranked = matched.concat(ranked.filter(item => !matched.some(m => m.listing.id === item.listing.id)));
+    } catch {
+      req.log.info("Listing Matcher unavailable; using Need Interpreter filters");
     }
     res.json(InterpretNeedResponse.parse({
-      available: true, message: "", understood: await guard(interpreted.understood, "market", "Buyer", org?.id),
+      // Local safety avoids an extra remote guard call for every listing.
+      available: true, message: "", understood: guardLocally(interpreted.understood as string),
       filters, ranked,
     }));
   } catch {

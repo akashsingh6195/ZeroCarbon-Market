@@ -360,6 +360,11 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
+  if (method === "POST" && /\/api\/need\/?(?:\?|$)/.test(requestInfo.url)) {
+    // Start the timer when submitted, not when the need box first renders.
+    const timeout = AbortSignal.timeout(75000);
+    init.signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+  }
   const response = await fetch(input, { ...init, method, headers });
 
   if (!response.ok) {

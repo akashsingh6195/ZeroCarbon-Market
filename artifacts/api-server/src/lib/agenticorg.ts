@@ -1,11 +1,9 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { createHash } from "node:crypto";
 import Ajv from "ajv";
+import scanResultSchema from "../../../../shared/contracts/ScanResult.json";
 import { event } from "./events";
 import { logger } from "./logger";
 
-const contractsDir = path.resolve(process.cwd(), "../../shared/contracts");
 const ajv = new Ajv({ allErrors: true, strict: false });
 const cache = new Map<string, { until: number; value: AgentOutput; confidence: number | string | null }>();
 const agentNames = [
@@ -54,11 +52,6 @@ const outputIsValid: Record<AgentName, (value: Record<string, unknown>) => boole
 
 export class IntegrationUnavailable extends Error {}
 
-async function loadJson(file: string) {
-  try { return JSON.parse(await readFile(path.join(contractsDir, file), "utf8")); }
-  catch { throw new IntegrationUnavailable("Shared service contracts have not been supplied."); }
-}
-
 function parseOutput(value: unknown): Record<string, unknown> {
   if (typeof value === "string") {
     const json = value.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim();
@@ -69,7 +62,9 @@ function parseOutput(value: unknown): Record<string, unknown> {
 }
 
 export async function validateContract(name: string, value: unknown) {
-  const schema = await loadJson(`${name}.json`);
+  // Bundle the actual shared schema: production does not run from the artifact's cwd.
+  if (name !== "ScanResult") throw new IntegrationUnavailable("Unknown shared service contract.");
+  const schema = scanResultSchema;
   let validate = ajv.getSchema(name);
   if (!validate) { ajv.addSchema(schema, name); validate = ajv.getSchema(name); }
   if (!validate?.(value)) throw new IntegrationUnavailable("Service response did not match its shared contract.");
@@ -124,7 +119,7 @@ export const agenticorg = {
       const body = { action: "process", inputs: input, context: {} };
       const response = await fetch(url, {
         method: "POST", headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body), signal: AbortSignal.timeout(15000),
+        body: JSON.stringify(body), signal: AbortSignal.timeout(30000),
       });
       if (!response.ok) {
         status = "http_error";
@@ -181,6 +176,10 @@ export const agenticorg = {
 export const forbidden = /\b(?:invest(?:ing|ment|ments)?|returns?|yields?|profits?|guaranteed)\b|carbon[\s-]+neutral|net[\s-]+zero|you are zero carbon/gi;
 export function blockedPhrases(text: string) { return [...new Set(text.match(forbidden) ?? [])]; }
 const blockedText = "This text could not be checked. Please use factual credit details and avoid unsupported claims.";
+
+export function guardLocally(text: string) {
+  return blockedPhrases(text).length ? blockedText : text;
+}
 
 export async function guard(text: string, screen: string, role: string, orgId: string | null = null) {
   try {
